@@ -110,15 +110,22 @@ helm upgrade --install loki grafana/loki-stack \
   -n monitoring \
   -f "${REPO_ROOT}/DevOps/k8s/monitoring/loki-values.yaml"
 
-# ── 7. Apply network policies ─────────────────────────────────────────────────
+# ── 7. ArgoCD ApplicationSet ─────────────────────────────────────────────────
 echo ""
-echo "── Step 7: Network policies ──"
-kubectl apply -f "${REPO_ROOT}/DevOps/k8s/network-policies/"
-
-# ── 8. ArgoCD ApplicationSet ─────────────────────────────────────────────────
-echo ""
-echo "── Step 8: ArgoCD ApplicationSet ──"
+echo "── Step 7: ArgoCD ApplicationSet ──"
+for ns in dev qa uat prod; do
+  kubectl create namespace "${ns}" --dry-run=client -o yaml | kubectl apply -f -
+done
 kubectl apply -f "${REPO_ROOT}/DevOps/k8s/argocd/applicationset.yaml"
+
+# ── 8. Apply network policies ─────────────────────────────────────────────────
+echo ""
+echo "── Step 8: Network policies ──"
+for ns in dev qa uat prod; do
+  for policy in "${REPO_ROOT}/DevOps/k8s/network-policies/"*.yaml; do
+    sed "s/namespace: dev/namespace: ${ns}/g" "${policy}" | kubectl apply -f -
+  done
+done
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 ARGOCD_PASS=$(kubectl -n argocd get secret argocd-initial-admin-secret \

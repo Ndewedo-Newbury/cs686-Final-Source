@@ -42,4 +42,4 @@ frontend:
     repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
     tag: dev-latest
   ingress:
-    host: dev.fittracker.example.com
+    host: dev.cs686.live

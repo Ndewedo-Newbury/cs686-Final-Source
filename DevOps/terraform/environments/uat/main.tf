@@ -98,10 +98,12 @@ module "secrets" {
 module "api_gateway" {
   source = "../../modules/api-gateway"
 
-  project_name = var.project_name
-  environment  = "uat"
-  alb_dns_name = var.alb_dns_name
-  api_domain   = "api.uat.${var.base_domain}"
+  project_name        = var.project_name
+  environment         = "uat"
+  alb_dns_name        = var.alb_dns_name
+  api_domain          = "uat-api.${var.base_domain}"
+  acm_certificate_arn = var.acm_certificate_arn
+  zone_id             = var.zone_id
 }
 
 module "test_runner" {

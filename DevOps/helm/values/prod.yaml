@@ -72,7 +72,7 @@ frontend:
     repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
     tag: v1.0.0
   ingress:
-    host: fittracker.example.com
+    host: cs686.live
   resources:
     requests:
       cpu: 100m

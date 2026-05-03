@@ -1,0 +1,102 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      - SERVICES=sqs
+      - DEFAULT_REGION=us-east-1
+    volumes:
+      - ./scripts/localstack:/etc/localstack/init/ready.d
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build: ./backend/auth-service
+    volumes:
+      - ./backend/auth-service:/app
+      - ./shared:/app/shared
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/auth_db
+      - JWT_SECRET=local-dev-secret-change-in-prod
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  workouts-service:
+    build: ./backend/workouts-service
+    volumes:
+      - ./backend/workouts-service:/app
+      - ./shared:/app/shared
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/workouts_db
+      - JWT_SECRET=local-dev-secret-change-in-prod
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/workout-events
+      - SQS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  analytics-service:
+    build: ./backend/analytics-service
+    volumes:
+      - ./backend/analytics-service:/app
+      - ./shared:/app/shared
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/analytics_db
+      - JWT_SECRET=local-dev-secret-change-in-prod
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/workout-events
+      - SQS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - auth-service
+      - workouts-service
+      - analytics-service
+
+volumes:
+  postgres_data:

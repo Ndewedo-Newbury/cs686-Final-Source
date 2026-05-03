@@ -1,0 +1,131 @@
+data "aws_caller_identity" "current" {}
+
+resource "aws_ecr_repository" "test_runner" {
+  name                 = "${var.project_name}/test-runner"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = { Environment = var.environment }
+}
+
+resource "aws_security_group" "test_runner" {
+  name        = "${var.project_name}-${var.environment}-test-runner-sg"
+  description = "Test runner Lambda — egress only"
+  vpc_id      = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Environment = var.environment }
+}
+
+# Allow test-runner Lambda to reach RDS on 5432
+resource "aws_security_group_rule" "test_runner_to_rds" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.test_runner.id
+  security_group_id        = var.rds_security_group_id
+}
+
+resource "aws_iam_role" "test_runner" {
+  name = "${var.project_name}-${var.environment}-test-runner"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "vpc_access" {
+  role       = aws_iam_role.test_runner.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_policy" "test_runner" {
+  name = "${var.project_name}-${var.environment}-test-runner-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}/${var.environment}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
+        Resource = var.sqs_queue_arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "test_runner" {
+  role       = aws_iam_role.test_runner.name
+  policy_arn = aws_iam_policy.test_runner.arn
+}
+
+resource "aws_lambda_function" "test_runner" {
+  function_name = "${var.project_name}-${var.environment}-test-runner"
+  role          = aws_iam_role.test_runner.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.test_runner.repository_url}:latest"
+  timeout       = 900  # 15 minutes max
+  memory_size   = 1024
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [aws_security_group.test_runner.id]
+  }
+
+  environment {
+    variables = {
+      ENVIRONMENT     = var.environment
+      PROJECT         = var.project_name
+      AWS_REGION_NAME = var.aws_region
+    }
+  }
+
+  tags = { Environment = var.environment }
+}
+
+resource "aws_lambda_function" "migrate" {
+  function_name = "${var.project_name}-${var.environment}-migrate"
+  role          = aws_iam_role.test_runner.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.test_runner.repository_url}:latest"
+  image_config {
+    command = ["migrate_handler.handler"]
+  }
+  timeout     = 300
+  memory_size = 512
+
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [aws_security_group.test_runner.id]
+  }
+
+  environment {
+    variables = {
+      ENVIRONMENT     = var.environment
+      PROJECT         = var.project_name
+      AWS_REGION_NAME = var.aws_region
+    }
+  }
+
+  tags = { Environment = var.environment }
+}

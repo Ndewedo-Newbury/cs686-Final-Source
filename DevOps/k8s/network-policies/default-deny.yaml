@@ -1,0 +1,13 @@
+# Default-deny all ingress/egress within each service namespace.
+# Applied to: dev, qa, uat, prod
+# Allow-lists are defined per service below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: dev  # duplicate for qa / uat / prod
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

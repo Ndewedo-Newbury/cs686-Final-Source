@@ -1,0 +1,45 @@
+# Per-environment Helm value overrides for dev
+# Apply with: helm upgrade --install <release> <chart> -f values/dev.yaml
+
+auth-service:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
+    tag: dev-latest
+  serviceAccount:
+    roleArn: <AUTH_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/dev/auth/db
+    jwtSecretPath: fitness-tracker/dev/auth/jwt
+
+workouts-service:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
+    tag: dev-latest
+  serviceAccount:
+    roleArn: <WORKOUTS_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/dev/workouts/db
+    jwtSecretPath: fitness-tracker/dev/auth/jwt
+    sqsSecretPath: fitness-tracker/dev/workouts/sqs
+
+analytics-service:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
+    tag: dev-latest
+  serviceAccount:
+    roleArn: <ANALYTICS_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/dev/analytics/db
+    jwtSecretPath: fitness-tracker/dev/auth/jwt
+    sqsSecretPath: fitness-tracker/dev/workouts/sqs
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
+    tag: dev-latest
+  ingress:
+    host: dev.fittracker.example.com

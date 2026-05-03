@@ -1,0 +1,190 @@
+name: Promote
+
+on:
+  schedule:
+    - cron: "0 6 * * *"      # 2 AM EST = 6 AM UTC  →  dev → QA + E2E
+  pull_request:
+    types: [closed]
+    branches: [main]         # PR merge  → QA → UAT + smoke tests
+  push:
+    tags:
+      - "RC*"                # RC1, RC2  → QA → UAT + smoke tests
+      - "v*.*.*"             # v1.0.1    → UAT → prod
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  PROJECT: fitness-tracker
+  SERVICES: auth-service workouts-service analytics-service frontend
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+# ── 1. NIGHTLY: dev → QA + E2E ──────────────────────────────────────────────
+
+jobs:
+  promote-qa:
+    name: Promote dev → QA
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Re-tag dev-latest → qa-latest
+        run: .github/scripts/retag-images.sh dev-latest qa-latest
+
+      - name: Update QA Helm values
+        run: .github/scripts/update-helm-tag.sh DevOps/helm/values/qa.yaml qa-latest "chore(qa): nightly promote dev-latest"
+
+      - name: Wait for QA rollout
+        run: sleep 120
+
+  e2e-qa:
+    name: E2E Tests — QA (Lambda)
+    needs: promote-qa
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    strategy:
+      matrix:
+        service: [auth-service, workouts-service, analytics-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run E2E tests
+        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-qa-test-runner ${{ matrix.service }} e2e
+
+# ── 2. RC TAG or PR MERGE: QA → UAT + smoke ─────────────────────────────────
+
+  promote-uat:
+    name: Promote QA → UAT
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/RC')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Re-tag qa-latest → RC label + uat-latest
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/RC* ]]; then
+            RC_TAG="${GITHUB_REF#refs/tags/}"
+            .github/scripts/retag-images.sh qa-latest "${RC_TAG}" uat-latest
+          else
+            .github/scripts/retag-images.sh qa-latest uat-latest
+          fi
+
+      - name: Update UAT Helm values
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/RC* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="uat-latest"
+          fi
+          .github/scripts/update-helm-tag.sh DevOps/helm/values/uat.yaml "${TAG}" "chore(uat): promote ${TAG}"
+
+      - name: Wait for UAT rollout
+        run: sleep 120
+
+  smoke-uat:
+    name: Smoke Tests — UAT (Lambda)
+    needs: promote-uat
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/RC')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    strategy:
+      matrix:
+        service: [auth-service, workouts-service, analytics-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run smoke tests
+        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-uat-test-runner ${{ matrix.service }} smoke
+
+# ── 3. VERSION TAG: UAT → Prod ───────────────────────────────────────────────
+
+  promote-prod:
+    name: Promote UAT → Prod
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Re-tag uat-latest → version tag
+        run: .github/scripts/retag-images.sh uat-latest "${GITHUB_REF#refs/tags/}"
+
+      - name: Run Alembic migrations
+        run: .github/scripts/run-migrations.sh ${{ env.PROJECT }}-prod-migrate
+
+      - name: Update prod Helm values
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          .github/scripts/update-helm-tag.sh DevOps/helm/values/prod.yaml "${VERSION}" "release: deploy ${VERSION} to production"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}

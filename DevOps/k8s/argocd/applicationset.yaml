@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fitness-tracker
+  namespace: argocd
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - environment: dev
+                - environment: qa
+                - environment: uat
+                - environment: prod
+          - list:
+              elements:
+                - service: auth-service
+                - service: workouts-service
+                - service: analytics-service
+                - service: frontend
+  template:
+    metadata:
+      name: "fitness-tracker-{{environment}}-{{service}}"
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/<YOUR_ORG>/cs686-Final-Source
+        targetRevision: HEAD
+        path: DevOps/helm/charts/{{service}}
+        helm:
+          valueFiles:
+            - ../../../values/{{environment}}.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{environment}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,86 @@
+auth-service:
+  replicaCount: 3
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
+    tag: v1.0.0
+  serviceAccount:
+    roleArn: <AUTH_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/prod/auth/db
+    jwtSecretPath: fitness-tracker/prod/auth/jwt
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  blueGreen:
+    enabled: true
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 900
+
+workouts-service:
+  replicaCount: 3
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
+    tag: v1.0.0
+  serviceAccount:
+    roleArn: <WORKOUTS_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/prod/workouts/db
+    jwtSecretPath: fitness-tracker/prod/auth/jwt
+    sqsSecretPath: fitness-tracker/prod/workouts/sqs
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  blueGreen:
+    enabled: true
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 900
+
+analytics-service:
+  replicaCount: 3
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
+    tag: v1.0.0
+  serviceAccount:
+    roleArn: <ANALYTICS_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/prod/analytics/db
+    jwtSecretPath: fitness-tracker/prod/auth/jwt
+    sqsSecretPath: fitness-tracker/prod/workouts/sqs
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  blueGreen:
+    enabled: true
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 900
+
+frontend:
+  replicaCount: 3
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
+    tag: v1.0.0
+  ingress:
+    host: fittracker.example.com
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  blueGreen:
+    enabled: true
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 900

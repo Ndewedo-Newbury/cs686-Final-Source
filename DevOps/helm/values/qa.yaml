@@ -1,0 +1,42 @@
+auth-service:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
+    tag: qa-latest
+  serviceAccount:
+    roleArn: <AUTH_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/qa/auth/db
+    jwtSecretPath: fitness-tracker/qa/auth/jwt
+
+workouts-service:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
+    tag: qa-latest
+  serviceAccount:
+    roleArn: <WORKOUTS_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/qa/workouts/db
+    jwtSecretPath: fitness-tracker/qa/auth/jwt
+    sqsSecretPath: fitness-tracker/qa/workouts/sqs
+
+analytics-service:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
+    tag: qa-latest
+  serviceAccount:
+    roleArn: <ANALYTICS_SERVICE_ROLE_ARN>
+  externalSecrets:
+    dbSecretPath: fitness-tracker/qa/analytics/db
+    jwtSecretPath: fitness-tracker/qa/auth/jwt
+    sqsSecretPath: fitness-tracker/qa/workouts/sqs
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
+    tag: qa-latest
+  ingress:
+    host: qa.fittracker.example.com

@@ -1,0 +1,85 @@
+# Allow API Gateway / ALB ingress to each service on its port.
+# Allow each service egress to RDS (5432) and AWS endpoints (HTTPS).
+# Analytics-service gets SQS receive; workouts-service gets SQS send.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-auth-service
+  namespace: dev
+spec:
+  podSelector:
+    matchLabels:
+      app: auth-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 8001
+  egress:
+    - ports:
+        - port: 5432   # RDS
+        - port: 443    # AWS Secrets Manager / STS
+        - port: 53     # DNS
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-workouts-service
+  namespace: dev
+spec:
+  podSelector:
+    matchLabels:
+      app: workouts-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 8002
+  egress:
+    - ports:
+        - port: 5432   # RDS
+        - port: 443    # SQS send + Secrets Manager
+        - port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-analytics-service
+  namespace: dev
+spec:
+  podSelector:
+    matchLabels:
+      app: analytics-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 8003
+  egress:
+    - ports:
+        - port: 5432   # RDS
+        - port: 443    # SQS receive + Secrets Manager
+        - port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend
+  namespace: dev
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 80
+  egress:
+    - ports:
+        - port: 53

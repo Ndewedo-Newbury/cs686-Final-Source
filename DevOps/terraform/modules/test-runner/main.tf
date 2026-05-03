@@ -89,6 +89,7 @@ resource "aws_iam_role_policy_attachment" "test_runner" {
 }
 
 resource "aws_lambda_function" "test_runner" {
+  count         = var.create_lambda ? 1 : 0
   function_name = "${var.project_name}-${var.environment}-test-runner"
   role          = local.test_runner_role
   package_type  = "Image"
@@ -113,6 +114,7 @@ resource "aws_lambda_function" "test_runner" {
 }
 
 resource "aws_lambda_function" "migrate" {
+  count         = var.create_lambda ? 1 : 0
   function_name = "${var.project_name}-${var.environment}-migrate"
   role          = local.test_runner_role
   package_type  = "Image"

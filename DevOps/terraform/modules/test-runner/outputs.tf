@@ -1,9 +1,9 @@
 output "function_name" {
-  value = aws_lambda_function.test_runner.function_name
+  value = length(aws_lambda_function.test_runner) > 0 ? aws_lambda_function.test_runner[0].function_name : ""
 }
 
 output "function_arn" {
-  value = aws_lambda_function.test_runner.arn
+  value = length(aws_lambda_function.test_runner) > 0 ? aws_lambda_function.test_runner[0].arn : ""
 }
 
 output "ecr_repository_url" {

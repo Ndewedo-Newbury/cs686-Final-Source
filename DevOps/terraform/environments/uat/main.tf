@@ -5,14 +5,14 @@ terraform {
       version = "~> 5.0"
     }
   }
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.10.0"
 
   backend "s3" {
-    bucket         = "fitness-tracker-terraform-state"
-    key            = "uat/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "fitness-tracker-terraform-locks"
-    encrypt        = true
+    bucket       = "fitness-tracker-terraform-state-793012580999"
+    key          = "uat/terraform.tfstate"
+    region       = "us-west-2"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 

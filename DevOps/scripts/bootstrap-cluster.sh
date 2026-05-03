@@ -74,7 +74,7 @@ echo "    NOTE: Run DevOps/scripts/update-eso-creds.sh whenever Voclabs creds ex
 echo ""
 echo "── Step 4: ArgoCD ──"
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n argocd \
+kubectl apply -n argocd --server-side \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 echo "    Waiting for argocd-server..."
 kubectl wait --for=condition=available deployment/argocd-server \

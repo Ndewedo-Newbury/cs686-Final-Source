@@ -5,6 +5,7 @@
 
 grafana:
   adminPassword: ""  # disabled — GitHub OAuth only
+  assertNoLeakedSecrets: false  # client_secret uses ${var} expansion, not a literal
 
   grafana.ini:
     server:

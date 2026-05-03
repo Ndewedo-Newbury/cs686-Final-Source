@@ -20,6 +20,10 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_iam_role" "lab" {
+  name = "LabRole"
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 
@@ -42,6 +46,7 @@ module "eks" {
   node_desired_count = 3
   node_min_count     = 3
   node_max_count     = 6
+  lab_role_arn       = data.aws_iam_role.lab.arn
 }
 
 module "rds" {
@@ -80,6 +85,7 @@ module "iam_irsa" {
   oidc_provider_arn      = module.eks.oidc_provider_arn
   oidc_provider_url      = module.eks.oidc_provider_url
   sqs_workout_events_arn = module.sqs.queue_arn
+  lab_role_arn           = data.aws_iam_role.lab.arn
 }
 
 module "secrets" {
@@ -116,6 +122,7 @@ module "test_runner" {
   private_subnet_ids    = module.vpc.private_subnet_ids
   rds_security_group_id = module.vpc.rds_security_group_id
   sqs_queue_arn         = module.sqs.queue_arn
+  lab_role_arn          = data.aws_iam_role.lab.arn
 }
 
 module "monitoring" {
@@ -126,4 +133,5 @@ module "monitoring" {
   oidc_provider_arn = module.eks.oidc_provider_arn
   oidc_provider_url = module.eks.oidc_provider_url
   alert_email       = var.alert_email
+  lab_role_arn      = data.aws_iam_role.lab.arn
 }

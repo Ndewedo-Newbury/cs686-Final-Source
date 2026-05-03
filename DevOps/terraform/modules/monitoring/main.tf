@@ -16,7 +16,8 @@ resource "aws_sns_topic_subscription" "email" {
 }
 
 resource "aws_iam_role" "alertmanager" {
-  name = "${var.project_name}-${var.environment}-alertmanager"
+  count = var.lab_role_arn == "" ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-alertmanager"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -41,7 +42,8 @@ resource "aws_iam_role" "alertmanager" {
 }
 
 resource "aws_iam_policy" "alertmanager" {
-  name = "${var.project_name}-${var.environment}-alertmanager-policy"
+  count = var.lab_role_arn == "" ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-alertmanager-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -54,6 +56,7 @@ resource "aws_iam_policy" "alertmanager" {
 }
 
 resource "aws_iam_role_policy_attachment" "alertmanager" {
-  role       = aws_iam_role.alertmanager.name
-  policy_arn = aws_iam_policy.alertmanager.arn
+  count      = var.lab_role_arn == "" ? 1 : 0
+  role       = aws_iam_role.alertmanager[0].name
+  policy_arn = aws_iam_policy.alertmanager[0].arn
 }

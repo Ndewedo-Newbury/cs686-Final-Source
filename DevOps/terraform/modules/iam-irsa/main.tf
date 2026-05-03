@@ -1,11 +1,12 @@
 locals {
-  services = ["auth-service", "workouts-service", "analytics-service"]
+  create_roles     = var.lab_role_arn == ""
+  services_to_create = local.create_roles ? toset(["auth-service", "workouts-service", "analytics-service"]) : toset([])
 }
 
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "service" {
-  for_each = toset(local.services)
+  for_each = local.services_to_create
   name     = "${var.project_name}-${var.environment}-${each.key}"
 
   assume_role_policy = jsonencode({
@@ -32,7 +33,8 @@ resource "aws_iam_role" "service" {
 }
 
 resource "aws_iam_policy" "auth_service" {
-  name = "${var.project_name}-${var.environment}-auth-service-policy"
+  count = local.create_roles ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-auth-service-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -47,7 +49,8 @@ resource "aws_iam_policy" "auth_service" {
 }
 
 resource "aws_iam_policy" "workouts_service" {
-  name = "${var.project_name}-${var.environment}-workouts-service-policy"
+  count = local.create_roles ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-workouts-service-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -67,7 +70,8 @@ resource "aws_iam_policy" "workouts_service" {
 }
 
 resource "aws_iam_policy" "analytics_service" {
-  name = "${var.project_name}-${var.environment}-analytics-service-policy"
+  count = local.create_roles ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-analytics-service-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -91,16 +95,19 @@ resource "aws_iam_policy" "analytics_service" {
 }
 
 resource "aws_iam_role_policy_attachment" "auth_service" {
+  count      = local.create_roles ? 1 : 0
   role       = aws_iam_role.service["auth-service"].name
-  policy_arn = aws_iam_policy.auth_service.arn
+  policy_arn = aws_iam_policy.auth_service[0].arn
 }
 
 resource "aws_iam_role_policy_attachment" "workouts_service" {
+  count      = local.create_roles ? 1 : 0
   role       = aws_iam_role.service["workouts-service"].name
-  policy_arn = aws_iam_policy.workouts_service.arn
+  policy_arn = aws_iam_policy.workouts_service[0].arn
 }
 
 resource "aws_iam_role_policy_attachment" "analytics_service" {
+  count      = local.create_roles ? 1 : 0
   role       = aws_iam_role.service["analytics-service"].name
-  policy_arn = aws_iam_policy.analytics_service.arn
+  policy_arn = aws_iam_policy.analytics_service[0].arn
 }

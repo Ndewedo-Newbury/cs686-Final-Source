@@ -1,3 +1,8 @@
+locals {
+  create_role      = var.lab_role_arn == ""
+  test_runner_role = var.lab_role_arn != "" ? var.lab_role_arn : aws_iam_role.test_runner[0].arn
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_ecr_repository" "test_runner" {
@@ -13,7 +18,7 @@ resource "aws_ecr_repository" "test_runner" {
 
 resource "aws_security_group" "test_runner" {
   name        = "${var.project_name}-${var.environment}-test-runner-sg"
-  description = "Test runner Lambda — egress only"
+  description = "Test runner Lambda - egress only"
   vpc_id      = var.vpc_id
 
   egress {
@@ -37,7 +42,8 @@ resource "aws_security_group_rule" "test_runner_to_rds" {
 }
 
 resource "aws_iam_role" "test_runner" {
-  name = "${var.project_name}-${var.environment}-test-runner"
+  count = local.create_role ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-test-runner"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -50,12 +56,14 @@ resource "aws_iam_role" "test_runner" {
 }
 
 resource "aws_iam_role_policy_attachment" "vpc_access" {
-  role       = aws_iam_role.test_runner.name
+  count      = local.create_role ? 1 : 0
+  role       = aws_iam_role.test_runner[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_iam_policy" "test_runner" {
-  name = "${var.project_name}-${var.environment}-test-runner-policy"
+  count = local.create_role ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-test-runner-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -75,16 +83,17 @@ resource "aws_iam_policy" "test_runner" {
 }
 
 resource "aws_iam_role_policy_attachment" "test_runner" {
-  role       = aws_iam_role.test_runner.name
-  policy_arn = aws_iam_policy.test_runner.arn
+  count      = local.create_role ? 1 : 0
+  role       = aws_iam_role.test_runner[0].name
+  policy_arn = aws_iam_policy.test_runner[0].arn
 }
 
 resource "aws_lambda_function" "test_runner" {
   function_name = "${var.project_name}-${var.environment}-test-runner"
-  role          = aws_iam_role.test_runner.arn
+  role          = local.test_runner_role
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.test_runner.repository_url}:latest"
-  timeout       = 900  # 15 minutes max
+  timeout       = 900
   memory_size   = 1024
 
   vpc_config {
@@ -105,7 +114,7 @@ resource "aws_lambda_function" "test_runner" {
 
 resource "aws_lambda_function" "migrate" {
   function_name = "${var.project_name}-${var.environment}-migrate"
-  role          = aws_iam_role.test_runner.arn
+  role          = local.test_runner_role
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.test_runner.repository_url}:latest"
   image_config {

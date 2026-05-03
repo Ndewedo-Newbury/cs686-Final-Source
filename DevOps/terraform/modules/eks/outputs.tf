@@ -11,9 +11,9 @@ output "cluster_ca_certificate" {
 }
 
 output "oidc_provider_arn" {
-  value = aws_iam_openid_connect_provider.eks.arn
+  value = length(aws_iam_openid_connect_provider.eks) > 0 ? aws_iam_openid_connect_provider.eks[0].arn : ""
 }
 
 output "oidc_provider_url" {
-  value = aws_iam_openid_connect_provider.eks.url
+  value = length(aws_iam_openid_connect_provider.eks) > 0 ? aws_iam_openid_connect_provider.eks[0].url : ""
 }

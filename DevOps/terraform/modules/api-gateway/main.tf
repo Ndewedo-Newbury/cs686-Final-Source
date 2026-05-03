@@ -1,6 +1,6 @@
 resource "aws_api_gateway_rest_api" "main" {
   name        = "${var.project_name}-${var.environment}"
-  description = "Fitness Tracker API Gateway — ${var.environment}"
+  description = "Fitness Tracker API Gateway - ${var.environment}"
 
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -29,6 +29,9 @@ locals {
     workouts  = { path = "workouts",  port = 8002 }
     analytics = { path = "analytics", port = 8003 }
   }
+  # Use a placeholder when ALB doesn't exist yet (pre-EKS deploy).
+  # Re-run terraform apply with alb_dns_name set after AWS LBC creates the ALB.
+  effective_alb_dns = var.alb_dns_name != "" ? var.alb_dns_name : "pending.${var.api_domain}"
 }
 
 resource "aws_api_gateway_resource" "service" {
@@ -64,7 +67,7 @@ resource "aws_api_gateway_integration" "service_proxy" {
   http_method             = aws_api_gateway_method.service_proxy[each.key].http_method
   integration_http_method = "ANY"
   type                    = "HTTP_PROXY"
-  uri                     = "http://${var.alb_dns_name}:${each.value.port}/api/v1/${each.value.path}/{proxy}"
+  uri                     = "http://${local.effective_alb_dns}:${each.value.port}/api/v1/${each.value.path}/{proxy}"
 
   request_parameters = {
     "integration.request.path.proxy" = "method.request.path.proxy"

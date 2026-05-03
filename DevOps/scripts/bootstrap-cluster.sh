@@ -43,6 +43,10 @@ helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-contro
   --set vpcId="${VPC_ID}" \
   --wait --timeout=5m
 
+echo "    Waiting for LBC webhook certificate to propagate..."
+kubectl rollout status deployment/aws-load-balancer-controller -n kube-system --timeout=120s
+sleep 15
+
 # ── 3. External Secrets Operator ─────────────────────────────────────────────
 echo ""
 echo "── Step 3: External Secrets Operator ──"

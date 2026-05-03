@@ -52,6 +52,12 @@ helm upgrade --install external-secrets external-secrets/external-secrets \
   -n external-secrets --create-namespace \
   --wait --timeout=5m
 
+echo "    Waiting for ESO CRDs to be established..."
+kubectl wait --for=condition=established \
+  crd/clustersecretstores.external-secrets.io \
+  crd/externalsecrets.external-secrets.io \
+  --timeout=60s
+
 echo "    Creating aws-credentials secret for ESO..."
 kubectl create secret generic aws-credentials \
   -n external-secrets \

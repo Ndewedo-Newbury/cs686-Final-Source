@@ -2,7 +2,7 @@ import uuid
 from uuid import UUID
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel, ConfigDict
 
@@ -67,12 +67,19 @@ def log_workout(body: WorkoutIn, user_id: str = Depends(verify_token), db: Sessi
 
 
 @router.get("/", response_model=List[WorkoutOut])
-def list_workouts(user_id: str = Depends(verify_token), db: Session = Depends(get_db)):
+def list_workouts(
+    user_id: str = Depends(verify_token),
+    db: Session = Depends(get_db),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
     return (
         db.query(Workout)
         .options(joinedload(Workout.exercises))
         .filter(Workout.user_id == uuid.UUID(user_id))
         .order_by(Workout.logged_at.desc())
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 

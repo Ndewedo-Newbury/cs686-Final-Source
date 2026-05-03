@@ -33,7 +33,7 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
     )
     db.add(user)
     db.commit()
-    return {"access_token": create_access_token(str(user.id))}
+    return {"access_token": create_access_token(str(user.id)), "token_type": "bearer"}
 
 
 @router.post("/login")
@@ -41,7 +41,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == body.email).first()
     if not user or not pwd_context.verify(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"access_token": create_access_token(str(user.id))}
+    return {"access_token": create_access_token(str(user.id)), "token_type": "bearer"}
 
 
 @router.get("/me")

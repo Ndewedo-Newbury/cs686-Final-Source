@@ -26,7 +26,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/<YOUR_ORG>/cs686-Final-Source
+        repoURL: https://github.com/Ndewedo-Newbury/cs686-Final-Source
         targetRevision: HEAD
         path: DevOps/helm/charts/{{service}}
         helm:

@@ -27,7 +27,7 @@ grafana:
     annotations:
       service.beta.kubernetes.io/aws-load-balancer-type: external
       service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: <ACM_CERT_ARN>
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-west-2:793012580999:certificate/67311a4f-736f-4136-ad3a-fc1e08699931
       service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
 
   additionalDataSources:
@@ -71,7 +71,7 @@ prometheus:
 alertmanager:
   serviceAccount:
     annotations:
-      eks.amazonaws.com/role-arn: <ALERTMANAGER_ROLE_ARN>   # terraform output: module.monitoring.alertmanager_role_arn
+      eks.amazonaws.com/role-arn: arn:aws:iam::793012580999:role/LabRole
 
   config:
     route:
@@ -85,14 +85,14 @@ alertmanager:
       - name: default
         sns_configs:
           - api_url: https://sns.us-west-2.amazonaws.com
-            topic_arn: <ALERTMANAGER_SNS_TOPIC_ARN>          # terraform output: module.monitoring.sns_topic_arn
+            topic_arn: arn:aws:sns:us-west-2:793012580999:fitness-tracker-dev-alerts          # terraform output: module.monitoring.sns_topic_arn
             sigv4:
               region: us-west-2
             send_resolved: true
       - name: critical
         sns_configs:
           - api_url: https://sns.us-west-2.amazonaws.com
-            topic_arn: <ALERTMANAGER_SNS_TOPIC_ARN>
+            topic_arn: arn:aws:sns:us-west-2:793012580999:fitness-tracker-dev-alerts
             sigv4:
               region: us-west-2
             send_resolved: true

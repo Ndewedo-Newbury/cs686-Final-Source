@@ -11,9 +11,5 @@ output "custom_domain_url" {
 }
 
 output "acm_certificate_arn" {
-  value = aws_acm_certificate.api.arn
-}
-
-output "acm_validation_options" {
-  value = aws_acm_certificate.api.domain_validation_options
+  value = var.acm_certificate_arn
 }

@@ -58,10 +58,50 @@ jobs:
       - name: Build & push all images
         run: .github/scripts/build-and-push.sh
 
+  migrate:
+    name: Run DB Migrations
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Lambda image to latest build
+        run: |
+          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.PROJECT }}/test-runner:latest"
+          for fn in ${{ env.PROJECT }}-dev-test-runner ${{ env.PROJECT }}-dev-migrate; do
+            aws lambda update-function-code \
+              --function-name "${fn}" \
+              --image-uri "${IMAGE}" \
+              --query 'FunctionName' --output text
+            aws lambda wait function-updated --function-name "${fn}"
+          done
+
+      - name: Migrate each service database
+        run: |
+          for svc in auth-service workouts-service analytics-service; do
+            echo "--- Migrating ${svc} ---"
+            aws lambda invoke \
+              --function-name ${{ env.PROJECT }}-dev-migrate \
+              --payload "{\"service\":\"${svc}\"}" \
+              --cli-binary-format raw-in-base64-out \
+              /tmp/migrate-result.json
+            jq . /tmp/migrate-result.json
+            jq -e '.success == true' /tmp/migrate-result.json
+          done
+
   integration-test:
     name: Integration Tests (Lambda)
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: migrate
     strategy:
       matrix:
         service: [auth-service, workouts-service, analytics-service]

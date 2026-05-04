@@ -8,9 +8,10 @@ Returns: {"success": true, "output": "..."}
 import json
 import os
 import subprocess
-import sys
 
 import boto3
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 
 def handler(event, context):
@@ -29,6 +30,21 @@ def handler(event, context):
     db = json.loads(
         sm.get_secret_value(SecretId=db_secret_paths[service])["SecretString"]
     )
+
+    # Create the target database if it doesn't exist (RDS only provisions postgres default)
+    conn = psycopg2.connect(
+        host=db["host"], port=int(db["port"]),
+        user=db["username"], password=db["password"],
+        dbname="postgres",
+    )
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db["dbname"],))
+    if not cur.fetchone():
+        cur.execute(f'CREATE DATABASE "{db["dbname"]}"')
+    cur.close()
+    conn.close()
+
     database_url = (
         f"postgresql://{db['username']}:{db['password']}"
         f"@{db['host']}:{db['port']}/{db['dbname']}"

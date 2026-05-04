@@ -4,8 +4,8 @@
 auth-service:
   replicaCount: 1
   image:
-    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
-    tag: dev-latest
+    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
+    tag: sha-476039b
   serviceAccount:
     roleArn: <AUTH_SERVICE_ROLE_ARN>
   externalSecrets:
@@ -15,8 +15,8 @@ auth-service:
 workouts-service:
   replicaCount: 1
   image:
-    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
-    tag: dev-latest
+    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
+    tag: sha-476039b
   serviceAccount:
     roleArn: <WORKOUTS_SERVICE_ROLE_ARN>
   externalSecrets:
@@ -27,8 +27,8 @@ workouts-service:
 analytics-service:
   replicaCount: 1
   image:
-    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
-    tag: dev-latest
+    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
+    tag: sha-476039b
   serviceAccount:
     roleArn: <ANALYTICS_SERVICE_ROLE_ARN>
   externalSecrets:
@@ -39,7 +39,7 @@ analytics-service:
 frontend:
   replicaCount: 1
   image:
-    repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
-    tag: dev-latest
+    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
+    tag: sha-476039b
   ingress:
     host: dev.cs686.live

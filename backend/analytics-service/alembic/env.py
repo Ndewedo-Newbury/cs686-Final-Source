@@ -4,7 +4,8 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-sys.path.insert(0, str(Path(__file__).parents[3]))
+sys.path.insert(0, str(Path(__file__).parents[3]))  # /app        — for shared/
+sys.path.insert(0, str(Path(__file__).parents[1]))  # /app/backend/analytics-service — for app/
 
 from shared.database.base import Base
 import app.models.stats  # noqa — registers UserStats with Base.metadata

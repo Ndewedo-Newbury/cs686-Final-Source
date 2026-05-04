@@ -8,7 +8,7 @@ import { Dashboard } from '@/pages/Dashboard'
 import { Workouts } from '@/pages/Workouts'
 import { WorkoutDetail } from '@/pages/WorkoutDetail'
 import { LogWorkout } from '@/pages/LogWorkout'
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 const queryClient = new QueryClient()
 

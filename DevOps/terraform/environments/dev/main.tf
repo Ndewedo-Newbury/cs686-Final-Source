@@ -123,6 +123,7 @@ module "test_runner" {
   rds_security_group_id = module.vpc.rds_security_group_id
   sqs_queue_arn         = module.sqs.queue_arn
   lab_role_arn          = data.aws_iam_role.lab.arn
+  create_lambda         = true
 }
 
 module "monitoring" {

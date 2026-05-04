@@ -1,8 +1,8 @@
 import uuid
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 from shared.database.base import Base
 
 
@@ -12,7 +12,7 @@ class Workout(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(String(255), nullable=False)
-    logged_at = Column(DateTime, server_default=func.now())
+    logged_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     exercises = relationship("Exercise", back_populates="workout", cascade="all, delete")
 
 

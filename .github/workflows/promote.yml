@@ -47,7 +47,8 @@ jobs:
         run: .github/scripts/retag-images.sh dev-latest qa-latest
 
       - name: Update QA Helm values
-        run: .github/scripts/update-helm-tag.sh DevOps/helm/values/qa.yaml qa-latest "chore(qa): nightly promote dev-latest"
+        run: |
+          .github/scripts/update-helm-tag.sh DevOps/helm/values/qa.yaml qa-latest "chore(qa): nightly promote dev-latest"
 
       - name: Wait for QA rollout
         run: sleep 120

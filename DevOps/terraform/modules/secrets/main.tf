@@ -46,8 +46,9 @@ locals {
 }
 
 resource "aws_secretsmanager_secret" "secrets" {
-  for_each = local.secrets
-  name     = each.value.name
+  for_each                = local.secrets
+  name                    = each.value.name
+  recovery_window_in_days = 0
 
   tags = {
     Environment = var.environment

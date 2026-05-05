@@ -12,6 +12,10 @@ if [[ -n "${AWS_ACCOUNT_ID:-}" ]]; then
   sed -i "s|<ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g" "${VALUES_FILE}"
 fi
 
+if [[ -n "${AWS_REGION:-}" ]]; then
+  sed -i "s|dkr\.ecr\.[a-z0-9-]*\.amazonaws\.com|dkr.ecr.${AWS_REGION}.amazonaws.com|g" "${VALUES_FILE}"
+fi
+
 sed -i "s|tag: .*|tag: ${TAG}|g" "${VALUES_FILE}"
 
 git config user.name  "github-actions[bot]"

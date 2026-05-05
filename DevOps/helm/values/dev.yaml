@@ -4,10 +4,10 @@
 auth-service:
   replicaCount: 2
   image:
-    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
+    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/auth-service
     tag: sha-502b6cf
   serviceAccount:
-    roleArn: <AUTH_SERVICE_ROLE_ARN>
+    roleArn: arn:aws:iam::793012580999:role/LabRole
   externalSecrets:
     dbSecretPath: fitness-tracker/dev/auth/db
     jwtSecretPath: fitness-tracker/dev/auth/jwt
@@ -15,10 +15,10 @@ auth-service:
 workouts-service:
   replicaCount: 2
   image:
-    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
+    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/workouts-service
     tag: sha-502b6cf
   serviceAccount:
-    roleArn: <WORKOUTS_SERVICE_ROLE_ARN>
+    roleArn: arn:aws:iam::793012580999:role/LabRole
   externalSecrets:
     dbSecretPath: fitness-tracker/dev/workouts/db
     jwtSecretPath: fitness-tracker/dev/auth/jwt
@@ -27,10 +27,10 @@ workouts-service:
 analytics-service:
   replicaCount: 2
   image:
-    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
+    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/analytics-service
     tag: sha-502b6cf
   serviceAccount:
-    roleArn: <ANALYTICS_SERVICE_ROLE_ARN>
+    roleArn: arn:aws:iam::793012580999:role/LabRole
   externalSecrets:
     dbSecretPath: fitness-tracker/dev/analytics/db
     jwtSecretPath: fitness-tracker/dev/auth/jwt
@@ -39,7 +39,7 @@ analytics-service:
 frontend:
   replicaCount: 2
   image:
-    repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
+    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/frontend
     tag: sha-502b6cf
   ingress:
     host: dev.cs686.live

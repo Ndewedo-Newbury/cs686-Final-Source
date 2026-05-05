@@ -38,7 +38,6 @@ helm repo update eks
 helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
   --set clusterName="${CLUSTER_NAME}" \
-  --set "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=${LAB_ROLE_ARN}" \
   --set region="${REGION}" \
   --set vpcId="${VPC_ID}" \
   --wait --timeout=5m

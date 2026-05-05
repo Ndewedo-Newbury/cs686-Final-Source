@@ -2,7 +2,7 @@
 # Apply with: helm upgrade --install <release> <chart> -f values/dev.yaml
 
 auth-service:
-  replicaCount: 1
+  replicaCount: 2
   image:
     repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/auth-service
     tag: sha-476039b
@@ -13,7 +13,7 @@ auth-service:
     jwtSecretPath: fitness-tracker/dev/auth/jwt
 
 workouts-service:
-  replicaCount: 1
+  replicaCount: 2
   image:
     repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/workouts-service
     tag: sha-476039b
@@ -25,7 +25,7 @@ workouts-service:
     sqsSecretPath: fitness-tracker/dev/workouts/sqs
 
 analytics-service:
-  replicaCount: 1
+  replicaCount: 2
   image:
     repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/analytics-service
     tag: sha-476039b
@@ -37,7 +37,7 @@ analytics-service:
     sqsSecretPath: fitness-tracker/dev/workouts/sqs
 
 frontend:
-  replicaCount: 1
+  replicaCount: 2
   image:
     repository: 793012580999.dkr.ecr.us-east-1.amazonaws.com/fitness-tracker/frontend
     tag: sha-476039b

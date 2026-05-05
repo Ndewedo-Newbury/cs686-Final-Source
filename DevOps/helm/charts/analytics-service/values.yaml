@@ -34,3 +34,7 @@ blueGreen:
   enabled: false
   autoPromotionEnabled: false
   scaleDownDelaySeconds: 900
+
+pdb:
+  enabled: true
+  minAvailable: 1

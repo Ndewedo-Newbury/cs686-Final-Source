@@ -7,7 +7,7 @@ SHA=$(git rev-parse --short HEAD)
 
 for svc in auth-service workouts-service analytics-service; do
   REPO="${ECR_REGISTRY}/${PROJECT}/${svc}"
-  docker build -t "${REPO}:sha-${SHA}" -t "${REPO}:dev-latest" "backend/${svc}/"
+  docker build -f "backend/${svc}/Dockerfile" -t "${REPO}:sha-${SHA}" -t "${REPO}:dev-latest" .
   docker push "${REPO}:sha-${SHA}"
   docker push "${REPO}:dev-latest"
 done

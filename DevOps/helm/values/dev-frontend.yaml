@@ -1,6 +1,6 @@
 replicaCount: 2
 image:
   repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/frontend
-  tag: sha-1309c8f
+  tag: sha-bdfdfdd
 ingress:
   host: dev.cs686.live

@@ -22,11 +22,11 @@ grafana:
       allow_sign_up: true
       client_id: ${GITHUB_OAUTH_CLIENT_ID}
       client_secret: ${GITHUB_OAUTH_CLIENT_SECRET}
-      scopes: user:email,read:org
+      scopes: user:email
       auth_url: https://github.com/login/oauth/authorize
       token_url: https://github.com/login/oauth/access_token
       api_url: https://api.github.com/user
-      allowed_organizations: Ndewedo-Newbury
+      allowed_email_domains: gmail.com
 
   service:
     type: LoadBalancer

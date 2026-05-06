@@ -3,31 +3,34 @@ locals {
     auth_db = {
       name  = "${var.project_name}/${var.environment}/auth/db"
       value = jsonencode({
-        host     = var.rds_host
-        port     = tostring(var.rds_port)
-        username = var.db_username
-        password = var.db_password
-        dbname   = "auth_db"
+        host         = var.rds_host
+        port         = tostring(var.rds_port)
+        username     = var.db_username
+        password     = var.db_password
+        dbname       = "auth_db"
+        database_url = "postgresql://${var.db_username}:${var.db_password}@${var.rds_host}:${var.rds_port}/auth_db"
       })
     }
     workouts_db = {
       name  = "${var.project_name}/${var.environment}/workouts/db"
       value = jsonencode({
-        host     = var.rds_host
-        port     = tostring(var.rds_port)
-        username = var.db_username
-        password = var.db_password
-        dbname   = "workouts_db"
+        host         = var.rds_host
+        port         = tostring(var.rds_port)
+        username     = var.db_username
+        password     = var.db_password
+        dbname       = "workouts_db"
+        database_url = "postgresql://${var.db_username}:${var.db_password}@${var.rds_host}:${var.rds_port}/workouts_db"
       })
     }
     analytics_db = {
       name  = "${var.project_name}/${var.environment}/analytics/db"
       value = jsonencode({
-        host     = var.rds_host
-        port     = tostring(var.rds_port)
-        username = var.db_username
-        password = var.db_password
-        dbname   = "analytics_db"
+        host         = var.rds_host
+        port         = tostring(var.rds_port)
+        username     = var.db_username
+        password     = var.db_password
+        dbname       = "analytics_db"
+        database_url = "postgresql://${var.db_username}:${var.db_password}@${var.rds_host}:${var.rds_port}/analytics_db"
       })
     }
     jwt = {

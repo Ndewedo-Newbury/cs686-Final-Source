@@ -31,7 +31,7 @@ spec:
         path: DevOps/helm/charts/{{service}}
         helm:
           valueFiles:
-            - ../../values/{{environment}}.yaml
+            - ../../values/{{environment}}-{{service}}.yaml
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{environment}}"

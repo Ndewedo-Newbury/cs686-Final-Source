@@ -134,7 +134,15 @@ jobs:
       - name: Bump dev Helm values
         run: |
           SHA=$(git rev-parse --short HEAD)
-          .github/scripts/update-helm-tag.sh \
-            DevOps/helm/values/dev.yaml \
-            "sha-${SHA}" \
-            "chore(dev): deploy sha-${SHA}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for svc in auth-service workouts-service analytics-service frontend; do
+            FILE="DevOps/helm/values/dev-${svc}.yaml"
+            if [[ -n "${AWS_REGION:-}" ]]; then
+              sed -i "s|dkr\.ecr\.[a-z0-9-]*\.amazonaws\.com|dkr.ecr.${AWS_REGION}.amazonaws.com|g" "${FILE}"
+            fi
+            sed -i "s|tag: .*|tag: sha-${SHA}|g" "${FILE}"
+            git add "${FILE}"
+          done
+          git diff --staged --quiet || git commit -m "chore(dev): deploy sha-${SHA}"
+          git push

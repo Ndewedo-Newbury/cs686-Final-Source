@@ -114,13 +114,6 @@ resource "aws_security_group" "rds" {
   description = "Allow PostgreSQL from EKS nodes only"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.eks_nodes.id]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -132,6 +125,19 @@ resource "aws_security_group" "rds" {
     Name        = "${var.project_name}-${var.environment}-rds-sg"
     Environment = var.environment
   }
+
+  lifecycle {
+    ignore_changes = [ingress]
+  }
+}
+
+resource "aws_security_group_rule" "rds_from_eks" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = aws_security_group.eks_nodes.id
 }
 
 resource "aws_security_group" "eks_nodes" {

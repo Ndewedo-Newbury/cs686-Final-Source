@@ -298,3 +298,7 @@ This starts:
 ### Email and Password for testing
 admin@fittracker.com
 Admin@1234!
+
+
+db_password: 2kKLFV-ybmakj6EQUTTLP8iH7JfST_jQ
+jwt_secret_key: f025457abb5ecf7ac0d6875c331d9fad1b37c2da792f133839085a336a077246

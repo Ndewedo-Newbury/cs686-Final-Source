@@ -55,7 +55,7 @@ def handler(event, context):
         capture_output=True,
         text=True,
         cwd=f"/app/backend/{service}",
-        env={**os.environ, "DATABASE_URL": database_url},
+        env={**os.environ, "DATABASE_URL": database_url, "PYTHONPATH": "/app/backend"},
     )
 
     return {

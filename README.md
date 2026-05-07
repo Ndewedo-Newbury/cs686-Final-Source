@@ -302,3 +302,94 @@ Admin@1234!
 
 db_password: 2kKLFV-ybmakj6EQUTTLP8iH7JfST_jQ
 jwt_secret_key: f025457abb5ecf7ac0d6875c331d9fad1b37c2da792f133839085a336a077246
+
+userful dev commands:
+
+terraform apply -var-file=/tmp/destroy.tfvars -var="alb_dns_name=" -auto-approve
+
+aws sts get-caller-identity
+
+---
+
+## Post-Rebuild Checklist
+
+After every `terraform destroy` + `terraform apply` cycle, complete these steps in order:
+
+### 1. Push test-runner image to ECR (before terraform apply completes Lambdas)
+Lambda requires the image before it can be created. Build with `--provenance=false` for Lambda compatibility:
+```bash
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 793012580999.dkr.ecr.us-west-2.amazonaws.com
+docker build --platform linux/amd64 --provenance=false -f tests/Dockerfile -t 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest .
+docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest
+```
+
+### 2. Run bootstrap-cluster.sh
+```bash
+./DevOps/scripts/bootstrap-cluster.sh dev
+```
+
+### 3. Trigger CI to push service images
+Push an empty commit or use the GitHub Actions UI to run the CI workflow. ArgoCD will pick up new images automatically.
+
+### 4. Verify RDS security group allows the EKS cluster SG
+
+**This must be checked after every rebuild** — EKS creates a new cluster SG each time, and the Terraform-managed `rds_from_eks_cluster` rule must reference it.
+
+```bash
+# Get the SG actually on the EKS nodes
+aws ec2 describe-instances --region us-west-2 \
+  --filters "Name=tag:eks:cluster-name,Values=fitness-tracker-dev" \
+  --query 'Reservations[0].Instances[0].SecurityGroups' --output json
+
+# Get the SG that the RDS ingress rule currently allows
+aws ec2 describe-security-groups --region us-west-2 \
+  --group-ids sg-0532d8de76d2bba98 \
+  --query 'SecurityGroups[0].IpPermissions' --output json
+```
+
+If the GroupId in the RDS rule doesn't match the GroupId on the nodes, add the missing rule:
+```bash
+aws ec2 authorize-security-group-ingress \
+  --region us-west-2 \
+  --group-id sg-0532d8de76d2bba98 \
+  --protocol tcp --port 5432 \
+  --source-group <eks-cluster-sg-id>
+```
+
+Then import it into Terraform state before next apply:
+```bash
+cd DevOps/terraform/environments/dev
+terraform import 'aws_security_group_rule.rds_from_eks_cluster' <sgr-id>
+```
+
+### 5. Verify Grafana DNS
+```bash
+# Check current ELB
+kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Check Route53 record
+aws route53 list-resource-record-sets --hosted-zone-id Z02729261L6S4IJLVF2R4 \
+  --query "ResourceRecordSets[?Name=='grafana.cs686.live.']"
+```
+
+### 6. Clear stale ReplicaSets if pods are stuck Pending
+After CI runs and ArgoCD re-syncs, old RSes from the first (failed) sync may fill node capacity:
+```bash
+# Find stale RSes (old SHA, desired > 0)
+kubectl get rs -n dev -o custom-columns='NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,DESIRED:.spec.replicas'
+
+# Delete any RS using a SHA that no longer exists in ECR
+kubectl delete rs -n dev <old-rs-name>
+```
+
+### 7. Recover from Terraform state lock (expired Voclabs credentials)
+If credentials expire mid-apply, Terraform leaves a stale lock:
+```bash
+# Get the lock ID from the error message, then:
+terraform force-unlock -force <LOCK_ID>
+
+# If errored.tfstate exists, push it first:
+terraform state push errored.tfstate
+```
+
+

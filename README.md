@@ -359,7 +359,7 @@ After every `terraform destroy` + `terraform apply` cycle, complete these steps 
 Lambda requires the image before it can be created. Build with `--provenance=false` for Lambda compatibility:
 ```bash
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 793012580999.dkr.ecr.us-west-2.amazonaws.com
-docker build --platform linux/amd64 --provenance=false -f tests/Dockerfile -t 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest .
+docker build --platform linux/amd64 --provenance=false -f backend/tests/Dockerfile -t 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest .
 docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest
 ```
 
@@ -368,41 +368,32 @@ docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-ru
 ./DevOps/scripts/bootstrap-cluster.sh dev
 ```
 
-### 3. Trigger CI to push service images
+### 3. Set gp2 as the default storage class
+EKS creates the `gp2` storage class but does not mark it as default. Prometheus and Loki PVCs will stay `Pending` without this:
+```bash
+kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+
+### 4. Apply Prometheus alert rules
+```bash
+kubectl apply -f DevOps/k8s/monitoring/node-alerts.yaml
+```
+
+### 5. Re-subscribe email to SNS alerts
+The SNS topic is destroyed and recreated on each rebuild, so subscriptions are lost. Re-subscribe after each rebuild:
+```bash
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-west-2:793012580999:fitness-tracker-dev-alerts \
+  --protocol email \
+  --notification-endpoint newbury.ndewedo@gmail.com \
+  --region us-west-2
+```
+Check inbox and click the confirmation link.
+
+### 6. Trigger CI to push service images
 Push an empty commit or use the GitHub Actions UI to run the CI workflow. ArgoCD will pick up new images automatically.
 
-### 4. Verify RDS security group allows the EKS cluster SG
-
-**This must be checked after every rebuild** — EKS creates a new cluster SG each time, and the Terraform-managed `rds_from_eks_cluster` rule must reference it.
-
-```bash
-# Get the SG actually on the EKS nodes
-aws ec2 describe-instances --region us-west-2 \
-  --filters "Name=tag:eks:cluster-name,Values=fitness-tracker-dev" \
-  --query 'Reservations[0].Instances[0].SecurityGroups' --output json
-
-# Get the SG that the RDS ingress rule currently allows
-aws ec2 describe-security-groups --region us-west-2 \
-  --group-ids sg-0532d8de76d2bba98 \
-  --query 'SecurityGroups[0].IpPermissions' --output json
-```
-
-If the GroupId in the RDS rule doesn't match the GroupId on the nodes, add the missing rule:
-```bash
-aws ec2 authorize-security-group-ingress \
-  --region us-west-2 \
-  --group-id sg-0532d8de76d2bba98 \
-  --protocol tcp --port 5432 \
-  --source-group <eks-cluster-sg-id>
-```
-
-Then import it into Terraform state before next apply:
-```bash
-cd DevOps/terraform/environments/dev
-terraform import 'aws_security_group_rule.rds_from_eks_cluster' <sgr-id>
-```
-
-### 5. Verify Grafana DNS
+### 7. Verify Grafana DNS
 ```bash
 # Check current ELB
 kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
@@ -412,7 +403,23 @@ aws route53 list-resource-record-sets --hosted-zone-id Z02729261L6S4IJLVF2R4 \
   --query "ResourceRecordSets[?Name=='grafana.cs686.live.']"
 ```
 
-### 6. Clear stale ReplicaSets if pods are stuck Pending
+### 8. Scale node group to 3 nodes if monitoring pods stay Pending
+t3.medium nodes hold a maximum of 17 pods each. With 2 nodes, monitoring pods (Prometheus, Loki) may not schedule. Scale up if needed:
+```bash
+aws eks update-nodegroup-config \
+  --cluster-name fitness-tracker-dev \
+  --nodegroup-name fitness-tracker-dev-nodes \
+  --scaling-config desiredSize=3,minSize=1,maxSize=4 \
+  --region us-west-2
+```
+
+If a pod stays Pending with `volume node affinity conflict`, the PVC was provisioned in a different AZ than the available node. Delete the PVC and pod so it rebinds in the right AZ:
+```bash
+kubectl delete pvc <pvc-name> -n monitoring
+kubectl delete pod <pod-name> -n monitoring
+```
+
+### 9. Clear stale ReplicaSets if pods are stuck Pending
 After CI runs and ArgoCD re-syncs, old RSes from the first (failed) sync may fill node capacity:
 ```bash
 # Find stale RSes (old SHA, desired > 0)
@@ -422,7 +429,7 @@ kubectl get rs -n dev -o custom-columns='NAME:.metadata.name,IMAGE:.spec.templat
 kubectl delete rs -n dev <old-rs-name>
 ```
 
-### 7. Recover from Terraform state lock (expired Voclabs credentials)
+### 10. Recover from Terraform state lock (expired Voclabs credentials)
 If credentials expire mid-apply, Terraform leaves a stale lock:
 ```bash
 # Get the lock ID from the error message, then:

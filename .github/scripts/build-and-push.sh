@@ -20,6 +20,6 @@ docker push "${REPO}:dev-latest"
 # Test-runner + migrate Lambda share one image; built from repo root
 # so the Dockerfile can COPY backend/ and shared/
 REPO="${ECR_REGISTRY}/${PROJECT}/test-runner"
-docker build -f tests/Dockerfile -t "${REPO}:sha-${SHA}" -t "${REPO}:latest" .
+docker build --platform linux/amd64 --provenance=false -f tests/Dockerfile -t "${REPO}:sha-${SHA}" -t "${REPO}:latest" .
 docker push "${REPO}:sha-${SHA}"
 docker push "${REPO}:latest"

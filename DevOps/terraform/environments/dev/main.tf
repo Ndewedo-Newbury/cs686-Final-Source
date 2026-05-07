@@ -126,6 +126,15 @@ module "test_runner" {
   create_lambda         = true
 }
 
+resource "aws_security_group_rule" "rds_from_eks_cluster" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = module.vpc.rds_security_group_id
+  source_security_group_id = module.eks.cluster_security_group_id
+}
+
 module "monitoring" {
   source = "../../modules/monitoring"
 

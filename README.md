@@ -221,35 +221,75 @@ auth-service:v1.0.1        ← production release
 
 ## Observability & Logging
 
+### How Monitoring Works
+
+```
+EKS Nodes
+  └── node-exporter DaemonSet        ← exposes CPU/memory/disk metrics on :9100
+  └── kube-state-metrics Deployment  ← exposes Kubernetes object metrics
+
+Prometheus (StatefulSet)
+  └── scrapes node-exporter + kube-state-metrics every 15s via ServiceMonitors
+  └── evaluates PrometheusRules → fires alerts to Alertmanager
+  └── retains 15 days of metrics on a 20 Gi EBS volume
+
+Alertmanager
+  └── routes alerts → AWS SNS topic → email subscribers
+
+Grafana (Deployment, https://grafana.cs686.live)
+  └── Prometheus datasource → metrics dashboards
+  └── Loki datasource        → log explorer
+
+Loki (StatefulSet)
+  └── receives logs from Promtail DaemonSet (one pod per node)
+  └── Promtail ships stdout of all pods via Kubernetes log discovery
+```
+
+All components are deployed via the `kube-prometheus-stack` Helm chart plus a standalone Loki Helm chart, both in the `monitoring` namespace.
+
 ### Metrics & Dashboards
 
-- **Prometheus** — scrapes metrics from all EKS nodes and services
-- **Grafana** — dashboards for CPU, memory, and disk space per node
-- **Deployment:** `kube-prometheus-stack` Helm chart on EKS (includes Prometheus, Grafana, Alertmanager, Node Exporter, kube-state-metrics)
+- **Prometheus** — scrapes metrics from all EKS nodes and services via `ServiceMonitor` CRDs
+- **Grafana** — pre-provisioned dashboard: **Infrastructure → node-exporter-full** (gnetId 1860) shows per-node CPU, memory, disk, and network
+- **Grafana access:** https://grafana.cs686.live — login via GitHub OAuth (username/password login disabled)
 
-### Alerting
+### Alert Thresholds
 
-- **Alertmanager** (included in `kube-prometheus-stack`) routes alerts to:
-  - Email via SMTP
-  - Slack via webhook
-- Alerts fire on critical resource thresholds (CPU, memory, disk)
+Defined in `DevOps/k8s/monitoring/node-alerts.yaml` as a `PrometheusRule`. All alerts must persist for 5 minutes before firing.
 
-### Grafana Access & Security
+| Metric | Warning | Critical |
+|---|---|---|
+| CPU usage | > 80% | > 90% |
+| Memory usage | > 85% | > 95% |
+| Disk usage (/) | > 80% | > 90% |
 
-- Grafana is externally accessible via AWS Load Balancer Controller + ACM certificate (HTTPS)
-- **Username/password login is disabled**
-- Authentication via **GitHub OAuth** — users must authenticate with a GitHub account
-- Configured in Grafana Helm values (`grafana.ini` auth.github block)
+- **Warning** alerts go to the `default` Alertmanager receiver (SNS → email)
+- **Critical** alerts go to the `critical` Alertmanager receiver (same SNS topic, separate routing)
+
+To subscribe an email address to alerts:
+```bash
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-west-2:793012580999:fitness-tracker-dev-alerts \
+  --protocol email \
+  --notification-endpoint <your-email> \
+  --region us-west-2
+```
+AWS sends a confirmation email — click the link to activate.
+
+To apply the alert rules to the cluster:
+```bash
+kubectl apply -f DevOps/k8s/monitoring/node-alerts.yaml
+```
 
 ### Centralized Logging
 
-- **Loki** — log aggregation (label-indexed, not full-text)
-- **Promtail** — DaemonSet on every EKS node, ships logs from all 3 service pods to Loki
-- **Grafana** — unified UI for both metrics (Prometheus) and logs (Loki)
+- **Loki** — log aggregation (label-indexed, not full-text), stores logs on a 10 Gi EBS volume
+- **Promtail** — DaemonSet on every EKS node, ships stdout of all pods to Loki
+- **Grafana Explore** — query logs alongside metrics in the same UI
 
-All 3 services log to stdout. Kubernetes captures stdout. Promtail collects by label.
+All 3 services log to stdout. Kubernetes captures stdout. Promtail collects by pod label.
 
-Cross-service log query example (LogQL):
+Cross-service log query (LogQL):
 ```
 {app=~"auth-service|workouts-service|analytics-service"} |= "ERROR"
 ```

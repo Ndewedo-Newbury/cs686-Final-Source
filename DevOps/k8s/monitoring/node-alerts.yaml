@@ -1,0 +1,74 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-resource-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: node.resources
+      interval: 1m
+      rules:
+        # CPU
+        - alert: NodeCPUHighWarning
+          expr: |
+            (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage on {{ $labels.instance }}"
+            description: "CPU usage is {{ printf \"%.1f\" $value }}% (threshold: 80%)"
+
+        - alert: NodeCPUHighCritical
+          expr: |
+            (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 90
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical CPU usage on {{ $labels.instance }}"
+            description: "CPU usage is {{ printf \"%.1f\" $value }}% (threshold: 90%)"
+
+        # Memory
+        - alert: NodeMemoryHighWarning
+          expr: |
+            (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage on {{ $labels.instance }}"
+            description: "Memory usage is {{ printf \"%.1f\" $value }}% (threshold: 85%)"
+
+        - alert: NodeMemoryHighCritical
+          expr: |
+            (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical memory usage on {{ $labels.instance }}"
+            description: "Memory usage is {{ printf \"%.1f\" $value }}% (threshold: 95%)"
+
+        # Disk
+        - alert: NodeDiskHighWarning
+          expr: |
+            (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High disk usage on {{ $labels.instance }}"
+            description: "Disk usage is {{ printf \"%.1f\" $value }}% on {{ $labels.mountpoint }} (threshold: 80%)"
+
+        - alert: NodeDiskHighCritical
+          expr: |
+            (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 > 90
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical disk usage on {{ $labels.instance }}"
+            description: "Disk usage is {{ printf \"%.1f\" $value }}% on {{ $labels.mountpoint }} (threshold: 90%)"

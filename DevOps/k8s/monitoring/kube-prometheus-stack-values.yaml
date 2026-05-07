@@ -27,6 +27,7 @@ grafana:
       token_url: https://github.com/login/oauth/access_token
       api_url: https://api.github.com/user
       allowed_email_domains: gmail.com
+      skip_org_role_sync: true
 
   service:
     type: LoadBalancer

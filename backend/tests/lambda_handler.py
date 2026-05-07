@@ -32,6 +32,7 @@ def handler(event, context):
 
     sm = boto3.client("secretsmanager", region_name=region)
     test_env = os.environ.copy()
+    test_env["PYTHONPATH"] = "/app/backend"
 
     if suite == "integration":
         db_secret_paths = {

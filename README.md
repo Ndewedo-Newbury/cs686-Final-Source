@@ -345,7 +345,7 @@ jwt_secret_key: f025457abb5ecf7ac0d6875c331d9fad1b37c2da792f133839085a336a077246
 
 userful dev commands:
 
-terraform apply -var-file=/tmp/destroy.tfvars -var="alb_dns_name=" -auto-approve
+terraform apply -var-file=~/dev.tfvars -var="alb_dns_name=" -auto-approve
 
 aws sts get-caller-identity
 
@@ -356,8 +356,11 @@ aws sts get-caller-identity
 After every `terraform destroy` + `terraform apply` cycle, complete these steps in order:
 
 ### 1. Push test-runner image to ECR (before terraform apply completes Lambdas)
-Lambda requires the image before it can be created. Build with `--provenance=false` for Lambda compatibility:
+Lambda requires the image before it can be created. Build with `--provenance=false` for Lambda compatibility.
+
+**Must be run from the repo root** (`cs686-Final-Source/`), not from inside `DevOps/`:
 ```bash
+cd /path/to/cs686-Final-Source
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 793012580999.dkr.ecr.us-west-2.amazonaws.com
 docker build --platform linux/amd64 --provenance=false -f backend/tests/Dockerfile -t 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest .
 docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest
@@ -399,7 +402,7 @@ Push an empty commit or use the GitHub Actions UI to run the CI workflow. ArgoCD
 kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
 # Check Route53 record
-aws route53 list-resource-record-sets --hosted-zone-id Z02729261L6S4IJLVF2R4 \
+aws route53 list-resource-record-sets --hosted-zone-id Z04986691K8ZU67Z9P8WB \
   --query "ResourceRecordSets[?Name=='grafana.cs686.live.']"
 ```
 
@@ -440,3 +443,11 @@ terraform state push errored.tfstate
 ```
 
 
+
+
+Before running destroy, a few things to be aware of:
+
+EBS volumes — the Prometheus and Loki PVCs will be deleted. The EBS volumes have ReclaimPolicy: Delete so they'll be gone too.
+RDS — all databases and data will be destroyed.
+ECR images — these persist independently of Terraform, so they'll survive.
+Terraform state lock — if credentials expire mid-destroy (as happened before), you'll need to force-unlock again.

@@ -345,7 +345,7 @@ jwt_secret_key: f025457abb5ecf7ac0d6875c331d9fad1b37c2da792f133839085a336a077246
 
 userful dev commands:
 
-terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
+terraform apply -var-file=DevOps/terraform/environments/dev/dev.tfvars -var="alb_dns_name=" -auto-approve
 
 aws sts get-caller-identity
 
@@ -368,7 +368,7 @@ terraform apply -auto-approve
 ```bash
 cd ~/cs686/final/cs686-Final-Source/DevOps/terraform/environments/dev
 terraform init
-terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
+terraform apply -var-file=DevOps/terraform/environments/dev/dev.tfvars -var="alb_dns_name=" -auto-approve
 ```
 This will fail with `Source image does not exist` for the Lambda functions. That's expected — ECR repos are now created.
 
@@ -383,7 +383,7 @@ docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-ru
 ### 4. Second terraform apply (creates Lambdas)
 ```bash
 cd ~/cs686/final/cs686-Final-Source/DevOps/terraform/environments/dev
-terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
+terraform apply -var-file=DevOps/terraform/environments/dev/dev.tfvars -var="alb_dns_name=" -auto-approve
 ```
 
 ### 5. Run bootstrap-cluster.sh

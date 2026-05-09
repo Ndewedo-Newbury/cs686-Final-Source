@@ -1,5 +1,6 @@
 # Local secret overrides — never commit
 DevOps/k8s/monitoring/values-secrets.yaml
+DevOps/terraform/environments/dev/dev.tfvars
 
 # Python
 __pycache__/

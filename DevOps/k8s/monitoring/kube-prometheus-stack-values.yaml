@@ -35,7 +35,7 @@ grafana:
     annotations:
       service.beta.kubernetes.io/aws-load-balancer-type: external
       service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-west-2:793012580999:certificate/67311a4f-736f-4136-ad3a-fc1e08699931
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-west-2:793012580999:certificate/274213cb-1dca-4eca-b6cd-e6d1de119038
       service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
 
   additionalDataSources:

@@ -124,6 +124,7 @@ module "test_runner" {
   sqs_queue_arn         = module.sqs.queue_arn
   lab_role_arn          = data.aws_iam_role.lab.arn
   create_lambda         = true
+  api_url               = module.api_gateway.custom_domain_url
 }
 
 resource "aws_security_group_rule" "rds_from_eks_cluster" {

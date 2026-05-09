@@ -38,3 +38,9 @@ variable "create_lambda" {
   type        = bool
   default     = false
 }
+
+variable "api_url" {
+  description = "Base URL of the deployed API Gateway (e.g. https://dev-api.cs686.live). Injected into test runner Lambda as API_URL for e2e/smoke suites."
+  type        = string
+  default     = ""
+}

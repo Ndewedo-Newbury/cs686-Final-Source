@@ -108,6 +108,7 @@ resource "aws_lambda_function" "test_runner" {
       ENVIRONMENT     = var.environment
       PROJECT         = var.project_name
       AWS_REGION_NAME = var.aws_region
+      API_URL         = var.api_url
     }
   }
 

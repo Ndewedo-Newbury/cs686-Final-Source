@@ -345,7 +345,7 @@ jwt_secret_key: f025457abb5ecf7ac0d6875c331d9fad1b37c2da792f133839085a336a077246
 
 userful dev commands:
 
-terraform apply -var-file=~/dev.tfvars -var="alb_dns_name=" -auto-approve
+terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
 
 aws sts get-caller-identity
 
@@ -355,10 +355,24 @@ aws sts get-caller-identity
 
 After every `terraform destroy` + `terraform apply` cycle, complete these steps in order:
 
-### 1. Push test-runner image to ECR (before terraform apply completes Lambdas)
-Lambda requires the image before it can be created. Build with `--provenance=false` for Lambda compatibility.
+### 1. Bootstrap Terraform state bucket
+Creates the S3 bucket and DynamoDB lock table used by all environments:
+```bash
+cd DevOps/terraform/bootstrap
+terraform init
+terraform apply -auto-approve
+```
 
-**Must be run from the repo root** (`cs686-Final-Source/`), not from inside `DevOps/`:
+### 2. First terraform apply (creates ECR repos, will fail on Lambdas — expected)
+```bash
+cd DevOps/terraform/environments/dev
+terraform init
+terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
+```
+This will fail with `Source image does not exist` for the Lambda functions. That's expected — ECR repos are now created.
+
+### 3. Push test-runner image to ECR
+**Must be run from the repo root** (`cs686-Final-Source/`):
 ```bash
 cd /path/to/cs686-Final-Source
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 793012580999.dkr.ecr.us-west-2.amazonaws.com
@@ -366,23 +380,29 @@ docker build --platform linux/amd64 --provenance=false -f backend/tests/Dockerfi
 docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest
 ```
 
-### 2. Run bootstrap-cluster.sh
+### 4. Second terraform apply (creates Lambdas)
+```bash
+cd DevOps/terraform/environments/dev
+terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
+```
+
+### 5. Run bootstrap-cluster.sh
 ```bash
 ./DevOps/scripts/bootstrap-cluster.sh dev
 ```
 
-### 3. Set gp2 as the default storage class
+### 6. Set gp2 as the default storage class
 EKS creates the `gp2` storage class but does not mark it as default. Prometheus and Loki PVCs will stay `Pending` without this:
 ```bash
 kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 ```
 
-### 4. Apply Prometheus alert rules
+### 7. Apply Prometheus alert rules
 ```bash
 kubectl apply -f DevOps/k8s/monitoring/node-alerts.yaml
 ```
 
-### 5. Re-subscribe email to SNS alerts
+### 8. Re-subscribe email to SNS alerts
 The SNS topic is destroyed and recreated on each rebuild, so subscriptions are lost. Re-subscribe after each rebuild:
 ```bash
 aws sns subscribe \
@@ -393,10 +413,10 @@ aws sns subscribe \
 ```
 Check inbox and click the confirmation link.
 
-### 6. Trigger CI to push service images
+### 9. Trigger CI to push service images
 Push an empty commit or use the GitHub Actions UI to run the CI workflow. ArgoCD will pick up new images automatically.
 
-### 7. Verify Grafana DNS
+### 10. Verify Grafana DNS
 ```bash
 # Check current ELB
 kubectl get svc -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
@@ -406,7 +426,7 @@ aws route53 list-resource-record-sets --hosted-zone-id Z04986691K8ZU67Z9P8WB \
   --query "ResourceRecordSets[?Name=='grafana.cs686.live.']"
 ```
 
-### 8. Scale node group to 3 nodes if monitoring pods stay Pending
+### 11. Scale node group to 3 nodes if monitoring pods stay Pending
 t3.medium nodes hold a maximum of 17 pods each. With 2 nodes, monitoring pods (Prometheus, Loki) may not schedule. Scale up if needed:
 ```bash
 aws eks update-nodegroup-config \
@@ -422,7 +442,7 @@ kubectl delete pvc <pvc-name> -n monitoring
 kubectl delete pod <pod-name> -n monitoring
 ```
 
-### 9. Clear stale ReplicaSets if pods are stuck Pending
+### 12. Clear stale ReplicaSets if pods are stuck Pending
 After CI runs and ArgoCD re-syncs, old RSes from the first (failed) sync may fill node capacity:
 ```bash
 # Find stale RSes (old SHA, desired > 0)
@@ -432,7 +452,7 @@ kubectl get rs -n dev -o custom-columns='NAME:.metadata.name,IMAGE:.spec.templat
 kubectl delete rs -n dev <old-rs-name>
 ```
 
-### 10. Recover from Terraform state lock (expired Voclabs credentials)
+### 13. Recover from Terraform state lock (expired Voclabs credentials)
 If credentials expire mid-apply, Terraform leaves a stale lock:
 ```bash
 # Get the lock ID from the error message, then:

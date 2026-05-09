@@ -112,18 +112,14 @@ helm upgrade --install loki grafana/loki-stack \
 # ── 7. ArgoCD ApplicationSet ─────────────────────────────────────────────────
 echo ""
 echo "── Step 7: ArgoCD ApplicationSet ──"
-for ns in dev qa uat prod; do
-  kubectl create namespace "${ns}" --dry-run=client -o yaml | kubectl apply -f -
-done
+kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f "${REPO_ROOT}/DevOps/k8s/argocd/applicationset.yaml"
 
 # ── 8. Apply network policies ─────────────────────────────────────────────────
 echo ""
 echo "── Step 8: Network policies ──"
-for ns in dev qa uat prod; do
-  for policy in "${REPO_ROOT}/DevOps/k8s/network-policies/"*.yaml; do
-    sed "s/namespace: dev/namespace: ${ns}/g" "${policy}" | kubectl apply -f -
-  done
+for policy in "${REPO_ROOT}/DevOps/k8s/network-policies/"*.yaml; do
+  kubectl apply -f "${policy}"
 done
 
 # ── Summary ───────────────────────────────────────────────────────────────────

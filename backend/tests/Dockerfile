@@ -5,7 +5,7 @@ COPY backend/      /app/backend/
 
 # Install test dependencies + every service's runtime dependencies
 RUN pip install --no-cache-dir \
-      pytest pytest-asyncio httpx boto3 && \
+      pytest pytest-asyncio httpx boto3 requests && \
     pip install --no-cache-dir -r /app/backend/auth-service/requirements.txt && \
     pip install --no-cache-dir -r /app/backend/workouts-service/requirements.txt && \
     pip install --no-cache-dir -r /app/backend/analytics-service/requirements.txt

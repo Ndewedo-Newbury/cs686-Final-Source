@@ -84,7 +84,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Run E2E tests
-        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-qa-test-runner ${{ matrix.service }} e2e
+        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-dev-test-runner ${{ matrix.service }} e2e
 
 # ── 2. RC TAG or PR MERGE: QA → UAT + smoke ─────────────────────────────────
 
@@ -160,7 +160,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Run smoke tests
-        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-uat-test-runner ${{ matrix.service }} smoke
+        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-dev-test-runner ${{ matrix.service }} smoke
 
 # ── 3. VERSION TAG: UAT → Prod ───────────────────────────────────────────────
 

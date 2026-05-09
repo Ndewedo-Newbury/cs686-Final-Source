@@ -356,25 +356,25 @@ aws sts get-caller-identity
 After every `terraform destroy` + `terraform apply` cycle, complete these steps in order:
 
 ### 1. Bootstrap Terraform state bucket
-Creates the S3 bucket and DynamoDB lock table used by all environments:
+Creates the S3 bucket and DynamoDB lock table used by all environments.
+**All commands use absolute paths — run from anywhere:**
 ```bash
-cd DevOps/terraform/bootstrap
+cd ~/cs686/final/cs686-Final-Source/DevOps/terraform/bootstrap
 terraform init
 terraform apply -auto-approve
 ```
 
 ### 2. First terraform apply (creates ECR repos, will fail on Lambdas — expected)
 ```bash
-cd DevOps/terraform/environments/dev
+cd ~/cs686/final/cs686-Final-Source/DevOps/terraform/environments/dev
 terraform init
 terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
 ```
 This will fail with `Source image does not exist` for the Lambda functions. That's expected — ECR repos are now created.
 
 ### 3. Push test-runner image to ECR
-**Must be run from the repo root** (`cs686-Final-Source/`):
 ```bash
-cd /path/to/cs686-Final-Source
+cd ~/cs686/final/cs686-Final-Source
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 793012580999.dkr.ecr.us-west-2.amazonaws.com
 docker build --platform linux/amd64 --provenance=false -f backend/tests/Dockerfile -t 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest .
 docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-runner:latest
@@ -382,13 +382,13 @@ docker push 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/test-ru
 
 ### 4. Second terraform apply (creates Lambdas)
 ```bash
-cd DevOps/terraform/environments/dev
+cd ~/cs686/final/cs686-Final-Source/DevOps/terraform/environments/dev
 terraform apply -var-file=/home/nfnewbury-dev/dev.tfvars -var="alb_dns_name=" -auto-approve
 ```
 
 ### 5. Run bootstrap-cluster.sh
 ```bash
-./DevOps/scripts/bootstrap-cluster.sh dev
+~/cs686/final/cs686-Final-Source/DevOps/scripts/bootstrap-cluster.sh dev
 ```
 
 ### 6. Set gp2 as the default storage class

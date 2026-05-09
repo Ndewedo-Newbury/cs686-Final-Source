@@ -115,9 +115,22 @@ echo "── Step 7: ArgoCD ApplicationSet ──"
 kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f "${REPO_ROOT}/DevOps/k8s/argocd/applicationset.yaml"
 
-# ── 8. Apply network policies ─────────────────────────────────────────────────
+# ── 8. Backend API Ingress (ALB for API Gateway integration) ─────────────────
 echo ""
-echo "── Step 8: Network policies ──"
+echo "── Step 8: Backend API Ingress ──"
+kubectl apply -f "${REPO_ROOT}/DevOps/k8s/backend-ingress.yaml"
+echo "    Waiting for ALB to be provisioned (up to 3m)..."
+kubectl wait ingress/backend-api -n dev \
+  --for=jsonpath='{.status.loadBalancer.ingress[0].hostname}' \
+  --timeout=180s 2>/dev/null || true
+BACKEND_ALB=$(kubectl get ingress backend-api -n dev \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
+echo "    Backend ALB DNS: ${BACKEND_ALB}"
+echo "    Run terraform apply with: -var=\"alb_dns_name=${BACKEND_ALB}\""
+
+# ── 9. Apply network policies ─────────────────────────────────────────────────
+echo ""
+echo "── Step 9: Network policies ──"
 for policy in "${REPO_ROOT}/DevOps/k8s/network-policies/"*.yaml; do
   kubectl apply -f "${policy}"
 done

@@ -67,7 +67,7 @@ resource "aws_api_gateway_integration" "service_proxy" {
   http_method             = aws_api_gateway_method.service_proxy[each.key].http_method
   integration_http_method = "ANY"
   type                    = "HTTP_PROXY"
-  uri                     = "http://${local.effective_alb_dns}:${each.value.port}/api/v1/${each.value.path}/{proxy}"
+  uri                     = "http://${local.effective_alb_dns}/api/v1/${each.value.path}/{proxy}"
 
   request_parameters = {
     "integration.request.path.proxy" = "method.request.path.proxy"

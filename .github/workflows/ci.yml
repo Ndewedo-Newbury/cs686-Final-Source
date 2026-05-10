@@ -10,6 +10,7 @@ env:
   AWS_REGION: us-west-2
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com
   PROJECT: fitness-tracker
+  SERVICES: auth-service workouts-service analytics-service frontend
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:

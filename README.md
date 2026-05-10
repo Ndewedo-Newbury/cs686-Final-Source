@@ -449,7 +449,7 @@ kubectl set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true
 kubectl rollout restart daemonset aws-node -n kube-system
 kubectl rollout status daemonset aws-node -n kube-system --timeout=120s
 ```
-This raises the pod limit from 17 → 110 per t3.medium node without scaling the node group.
+This updates the VPC CNI IP allocation. Note: the kubelet's `--max-pods` limit (17 for t3.medium) only changes after nodes are recycled. For an immediate fix, scale to 3 nodes instead (see below).
 
 If a pod stays Pending with `volume node affinity conflict`, the PVC was provisioned in a different AZ than the available node. Delete the PVC and pod so it rebinds in the right AZ:
 ```bash

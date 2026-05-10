@@ -43,7 +43,7 @@ module "eks" {
   public_subnet_ids  = module.vpc.public_subnet_ids
   private_subnet_ids = module.vpc.private_subnet_ids
   node_instance_type       = "t3.medium"
-  node_desired_count       = 2
+  node_desired_count       = 3
   node_min_count           = 2
   node_max_count           = 3
   lab_role_arn             = data.aws_iam_role.lab.arn

@@ -174,13 +174,15 @@ jobs:
             kubectl -n argocd annotate application fitness-tracker-dev-${svc} \
               argocd.argoproj.io/refresh=hard --overwrite
           done
+          echo "Waiting 30s for ArgoCD to start syncing..."
+          sleep 30
 
       - name: Wait for deployments to be ready
         run: |
           for svc in auth-service workouts-service analytics-service frontend; do
             echo "--- Waiting for ${{ env.PROJECT }}-dev-${svc} ---"
             kubectl rollout status deployment/${{ env.PROJECT }}-dev-${svc} \
-              -n dev --timeout=300s
+              -n dev --timeout=600s
           done
 
 # ── Promote dev → QA → UAT (runs automatically after every successful deploy) ─

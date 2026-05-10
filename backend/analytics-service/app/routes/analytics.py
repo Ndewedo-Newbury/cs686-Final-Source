@@ -12,6 +12,11 @@ from app.models.stats import UserStats
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
 
+@router.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 class StatsOut(BaseModel):
     user_id: str
     total_workouts: int

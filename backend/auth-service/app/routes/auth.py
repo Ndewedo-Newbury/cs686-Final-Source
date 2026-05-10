@@ -12,6 +12,11 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+@router.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str

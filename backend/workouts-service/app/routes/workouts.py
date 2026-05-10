@@ -15,6 +15,11 @@ from app.services.sqs import publish_workout_logged
 router = APIRouter(prefix="/api/v1/workouts", tags=["workouts"])
 
 
+@router.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 class ExerciseIn(BaseModel):
     name: str
     sets: int

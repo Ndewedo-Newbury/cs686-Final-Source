@@ -44,3 +44,9 @@ variable "lab_role_arn" {
   type        = string
   default     = ""
 }
+
+variable "node_ami_release_version" {
+  description = "EKS optimized AMI release version (e.g. 1.32.3-20250501). Update to trigger a zero-downtime rolling node replacement. Get the latest with: aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.32/amazon-linux-2/recommended/release_version --query Parameter.Value --output text"
+  type        = string
+  default     = null
+}

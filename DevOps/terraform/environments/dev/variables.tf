@@ -49,3 +49,9 @@ variable "zone_id" {
   description = "Route53 hosted zone ID from bootstrap (terraform output route53_zone_id)"
   type        = string
 }
+
+variable "node_ami_release_version" {
+  description = "EKS optimized AMI release version. When set, triggers a rolling node replacement. Leave unset to let AWS pick the default for the k8s version."
+  type        = string
+  default     = null
+}

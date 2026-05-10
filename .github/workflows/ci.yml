@@ -179,11 +179,19 @@ jobs:
 
       - name: Wait for deployments to be ready
         run: |
-          for svc in auth-service workouts-service analytics-service frontend; do
-            echo "--- Waiting for ${{ env.PROJECT }}-dev-${svc} ---"
+          pids=()
+          # frontend is excluded — it is not exercised by e2e tests and the
+          # 2-node cluster can hit pod limits under concurrent rollout
+          for svc in auth-service workouts-service analytics-service; do
             kubectl rollout status deployment/${{ env.PROJECT }}-dev-${svc} \
-              -n dev --timeout=600s
+              -n dev --timeout=600s &
+            pids+=($!)
           done
+          failed=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || failed=1
+          done
+          exit $failed
 
 # ── Promote dev → QA → UAT (runs automatically after every successful deploy) ─
 

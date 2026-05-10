@@ -30,9 +30,17 @@ VPC_ID=$(aws eks describe-cluster --name "${CLUSTER_NAME}" --region "${REGION}" 
   --query "cluster.resourcesVpcConfig.vpcId" --output text)
 echo "    VPC: ${VPC_ID}"
 
-# ── 2. AWS Load Balancer Controller ──────────────────────────────────────────
+# ── 2. VPC CNI prefix delegation (raise pod limit from 17 → 110 per t3.medium) ─
 echo ""
-echo "── Step 2: AWS Load Balancer Controller ──"
+echo "── Step 2: VPC CNI prefix delegation ──"
+kubectl set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true
+kubectl rollout restart daemonset aws-node -n kube-system
+kubectl rollout status daemonset aws-node -n kube-system --timeout=120s
+echo "    Prefix delegation enabled — max pods per node raised to 110."
+
+# ── 3. AWS Load Balancer Controller ──────────────────────────────────────────
+echo ""
+echo "── Step 3: AWS Load Balancer Controller ──"
 helm repo add eks https://aws.github.io/eks-charts --force-update
 helm repo update eks
 helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -46,9 +54,9 @@ echo "    Waiting for LBC webhook certificate to propagate..."
 kubectl rollout status deployment/aws-load-balancer-controller -n kube-system --timeout=120s
 sleep 15
 
-# ── 3. External Secrets Operator ─────────────────────────────────────────────
+# ── 4. External Secrets Operator ─────────────────────────────────────────────
 echo ""
-echo "── Step 3: External Secrets Operator ──"
+echo "── Step 4: External Secrets Operator ──"
 helm repo add external-secrets https://charts.external-secrets.io --force-update
 helm repo update external-secrets
 helm upgrade --install external-secrets external-secrets/external-secrets \
@@ -75,7 +83,7 @@ echo "    NOTE: Run DevOps/scripts/update-eso-creds.sh whenever Voclabs creds ex
 
 # ── 4. ArgoCD ─────────────────────────────────────────────────────────────────
 echo ""
-echo "── Step 4: ArgoCD ──"
+echo "── Step 5: ArgoCD ──"
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n argocd --server-side --force-conflicts \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
@@ -85,14 +93,14 @@ kubectl wait --for=condition=available deployment/argocd-server \
 
 # ── 5. ArgoCD Rollouts ────────────────────────────────────────────────────────
 echo ""
-echo "── Step 5: ArgoCD Rollouts ──"
+echo "── Step 6: ArgoCD Rollouts ──"
 kubectl create namespace argo-rollouts --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n argo-rollouts \
   -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
 
 # ── 6. Monitoring stack ───────────────────────────────────────────────────────
 echo ""
-echo "── Step 6: Monitoring (Prometheus + Grafana + Loki) ──"
+echo "── Step 7: Monitoring (Prometheus + Grafana + Loki) ──"
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update
 helm repo add grafana https://grafana.github.io/helm-charts --force-update
 helm repo update prometheus-community grafana
@@ -111,13 +119,13 @@ helm upgrade --install loki grafana/loki-stack \
 
 # ── 7. ArgoCD ApplicationSet ─────────────────────────────────────────────────
 echo ""
-echo "── Step 7: ArgoCD ApplicationSet ──"
+echo "── Step 8: ArgoCD ApplicationSet ──"
 kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f "${REPO_ROOT}/DevOps/k8s/argocd/applicationset.yaml"
 
 # ── 8. Backend API Ingress (ALB for API Gateway integration) ─────────────────
 echo ""
-echo "── Step 8: Backend API Ingress ──"
+echo "── Step 9: Backend API Ingress ──"
 kubectl apply -f "${REPO_ROOT}/DevOps/k8s/backend-ingress.yaml"
 echo "    Waiting for ALB to be provisioned (up to 3m)..."
 kubectl wait ingress/backend-api -n dev \
@@ -130,7 +138,7 @@ echo "    Run terraform apply with: -var=\"alb_dns_name=${BACKEND_ALB}\""
 
 # ── 9. Apply network policies ─────────────────────────────────────────────────
 echo ""
-echo "── Step 9: Network policies ──"
+echo "── Step 10: Network policies ──"
 for policy in "${REPO_ROOT}/DevOps/k8s/network-policies/"*.yaml; do
   kubectl apply -f "${policy}"
 done

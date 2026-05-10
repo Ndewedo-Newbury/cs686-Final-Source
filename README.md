@@ -442,15 +442,14 @@ aws route53 list-resource-record-sets --hosted-zone-id Z04986691K8ZU67Z9P8WB \
   --query "ResourceRecordSets[?Name=='grafana.cs686.live.']"
 ```
 
-### 12. Scale node group to 3 nodes if monitoring pods stay Pending
-t3.medium nodes hold a maximum of 17 pods each. With 2 nodes, monitoring pods (Prometheus, Loki) may not schedule. Scale up if needed:
+### 12. VPC CNI prefix delegation (if not already enabled by bootstrap)
+`bootstrap-cluster.sh` now enables prefix delegation automatically. If pods are still Pending with `Too many pods` after bootstrap, enable it manually:
 ```bash
-aws eks update-nodegroup-config \
-  --cluster-name fitness-tracker-dev \
-  --nodegroup-name fitness-tracker-dev-nodes \
-  --scaling-config desiredSize=3,minSize=1,maxSize=4 \
-  --region us-west-2
+kubectl set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true
+kubectl rollout restart daemonset aws-node -n kube-system
+kubectl rollout status daemonset aws-node -n kube-system --timeout=120s
 ```
+This raises the pod limit from 17 → 110 per t3.medium node without scaling the node group.
 
 If a pod stays Pending with `volume node affinity conflict`, the PVC was provisioned in a different AZ than the available node. Delete the PVC and pod so it rebinds in the right AZ:
 ```bash

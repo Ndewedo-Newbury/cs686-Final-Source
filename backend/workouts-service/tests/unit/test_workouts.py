@@ -19,7 +19,7 @@ def _auth(token):
 
 
 def test_health(client, token):
-    r = client.get("/health")
+    r = client.get("/api/v1/workouts/health")
     assert r.status_code == 200
     assert r.json() == {"status": "ok"}
 

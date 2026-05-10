@@ -15,7 +15,7 @@ def _unique_email():
 
 
 def test_health(client):
-    r = client.get("/health")
+    r = client.get("/api/v1/auth/health")
     assert r.status_code == 200
     assert r.json() == {"status": "ok"}
 

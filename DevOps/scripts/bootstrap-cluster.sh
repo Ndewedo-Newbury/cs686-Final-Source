@@ -5,7 +5,7 @@
 #
 # Prerequisites:
 #   - kubectl, helm, aws CLI installed
-#   - Voclabs credentials exported (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN)
+#   - AWS credentials exported (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 #   - terraform apply completed for the target environment
 
 set -euo pipefail
@@ -13,7 +13,7 @@ set -euo pipefail
 ENV="${1:-dev}"
 CLUSTER_NAME="fitness-tracker-${ENV}"
 REGION="us-west-2"
-ACCOUNT_ID="793012580999"
+ACCOUNT_ID="010525338060"
 LAB_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/LabRole"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -74,12 +74,11 @@ kubectl create secret generic aws-credentials \
   -n external-secrets \
   --from-literal=access-key-id="${AWS_ACCESS_KEY_ID}" \
   --from-literal=secret-access-key="${AWS_SECRET_ACCESS_KEY}" \
-  --from-literal=session-token="${AWS_SESSION_TOKEN}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -f "${REPO_ROOT}/DevOps/k8s/argocd/cluster-secret-store.yaml"
 echo "    ClusterSecretStore applied."
-echo "    NOTE: Run DevOps/scripts/update-eso-creds.sh whenever Voclabs creds expire (~4h)."
+echo "    NOTE: Run DevOps/scripts/update-eso-creds.sh if you rotate your IAM credentials."
 
 # ── 4. ArgoCD ─────────────────────────────────────────────────────────────────
 echo ""
@@ -165,7 +164,6 @@ echo "    4. Re-run terraform apply with -var=alb_dns_name=<ALB_DNS>"
 echo ""
 echo "  GitHub Secrets to add at github.com/Ndewedo-Newbury/cs686-Final-Source/settings/secrets:"
 echo "    AWS_ACCOUNT_ID        = ${ACCOUNT_ID}"
-echo "    AWS_ACCESS_KEY_ID     = (from Voclabs — update every 4h)"
-echo "    AWS_SECRET_ACCESS_KEY = (from Voclabs — update every 4h)"
-echo "    AWS_SESSION_TOKEN     = (from Voclabs — update every 4h)"
+echo "    AWS_ACCESS_KEY_ID     = (permanent IAM credentials)"
+echo "    AWS_SECRET_ACCESS_KEY = (permanent IAM credentials)"
 echo ""

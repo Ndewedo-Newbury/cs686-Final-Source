@@ -1,7 +1,7 @@
 auth-service:
   replicaCount: 1
   image:
-    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/auth-service
+    repository: 010525338060.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/auth-service
     tag: qa-latest
   serviceAccount:
     roleArn: <AUTH_SERVICE_ROLE_ARN>
@@ -12,7 +12,7 @@ auth-service:
 workouts-service:
   replicaCount: 1
   image:
-    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/workouts-service
+    repository: 010525338060.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/workouts-service
     tag: qa-latest
   serviceAccount:
     roleArn: <WORKOUTS_SERVICE_ROLE_ARN>
@@ -24,7 +24,7 @@ workouts-service:
 analytics-service:
   replicaCount: 1
   image:
-    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/analytics-service
+    repository: 010525338060.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/analytics-service
     tag: qa-latest
   serviceAccount:
     roleArn: <ANALYTICS_SERVICE_ROLE_ARN>
@@ -36,7 +36,7 @@ analytics-service:
 frontend:
   replicaCount: 1
   image:
-    repository: 793012580999.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/frontend
+    repository: 010525338060.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/frontend
     tag: qa-latest
   ingress:
     host: qa.cs686.live

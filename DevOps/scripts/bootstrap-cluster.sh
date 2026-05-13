@@ -106,8 +106,6 @@ helm repo update prometheus-community grafana
 
 helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   -n monitoring --create-namespace \
-  --set prometheusOperator.admissionWebhooks.enabled=false \
-  --set prometheusOperator.admissionWebhooks.patch.enabled=false \
   --timeout=10m \
   -f "${REPO_ROOT}/DevOps/k8s/monitoring/kube-prometheus-stack-values.yaml" \
   -f "${REPO_ROOT}/DevOps/k8s/monitoring/values-secrets.yaml"

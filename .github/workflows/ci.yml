@@ -33,10 +33,49 @@ jobs:
       - name: Run unit tests
         run: .github/scripts/unit-test.sh ${{ matrix.service }}
 
+  migration-test:
+    name: Migration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth-service, workouts-service, analytics-service]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Run migration tests
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGPORT: "5432"
+        run: .github/scripts/migration-test.sh ${{ matrix.service }}
+
   build-and-push:
     name: Build & Push to ECR
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs: [unit-test, migration-test]
     if: github.event_name == 'push'
 
     permissions:
@@ -146,8 +185,6 @@ jobs:
           git pull --rebase -X ours origin main
           git push
 
-# ── Wait for ArgoCD to roll out new pods before running e2e tests ─────────────
-
   wait-for-rollout:
     name: Wait for Dev Rollout
     runs-on: ubuntu-latest
@@ -176,8 +213,6 @@ jobs:
       - name: Wait for deployments to be ready
         run: |
           pids=()
-          # frontend is excluded — it is not exercised by e2e tests and the
-          # 2-node cluster can hit pod limits under concurrent rollout
           for svc in auth-service workouts-service analytics-service; do
             kubectl rollout status deployment/${{ env.PROJECT }}-dev-${svc} \
               -n dev --timeout=600s &
@@ -188,105 +223,3 @@ jobs:
             wait "$pid" || failed=1
           done
           exit $failed
-
-# ── Promote dev → QA → UAT (runs automatically after every successful deploy) ─
-
-  promote-qa:
-    name: Promote dev → QA
-    runs-on: ubuntu-latest
-    needs: wait-for-rollout
-
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Re-tag dev-latest → qa-latest
-        run: .github/scripts/retag-images.sh dev-latest qa-latest
-
-      - name: Update QA Helm values
-        run: |
-          SHA=$(git rev-parse --short HEAD)
-          .github/scripts/update-helm-tag.sh DevOps/helm/values/qa.yaml qa-latest "chore(qa): promote sha-${SHA}"
-
-  e2e-qa:
-    name: E2E Tests — QA (Lambda)
-    runs-on: ubuntu-latest
-    needs: promote-qa
-    strategy:
-      matrix:
-        service: [auth-service, workouts-service, analytics-service]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Run E2E tests
-        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-dev-test-runner ${{ matrix.service }} e2e
-
-  promote-uat:
-    name: Promote QA → UAT
-    runs-on: ubuntu-latest
-    needs: e2e-qa
-
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Re-tag qa-latest → uat-latest
-        run: .github/scripts/retag-images.sh qa-latest uat-latest
-
-      - name: Update UAT Helm values
-        run: |
-          SHA=$(git rev-parse --short HEAD)
-          .github/scripts/update-helm-tag.sh DevOps/helm/values/uat.yaml uat-latest "chore(uat): promote sha-${SHA}"
-
-  smoke-uat:
-    name: Smoke Tests — UAT (Lambda)
-    runs-on: ubuntu-latest
-    needs: promote-uat
-    strategy:
-      matrix:
-        service: [auth-service, workouts-service, analytics-service]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Run smoke tests
-        run: .github/scripts/invoke-tests.sh ${{ env.PROJECT }}-dev-test-runner ${{ matrix.service }} smoke

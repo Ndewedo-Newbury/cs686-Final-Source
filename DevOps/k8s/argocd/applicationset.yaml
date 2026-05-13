@@ -10,9 +10,6 @@ spec:
           - list:
               elements:
                 - environment: dev
-                - environment: qa
-                - environment: uat
-                - environment: prod
           - list:
               elements:
                 - service: auth-service

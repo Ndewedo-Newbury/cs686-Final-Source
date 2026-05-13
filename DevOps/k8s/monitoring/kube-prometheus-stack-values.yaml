@@ -105,6 +105,14 @@ alertmanager:
               region: us-west-2
             send_resolved: true
 
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+    patch:
+      enabled: false
+  tls:
+    enabled: false
+
 nodeExporter:
   enabled: true
 

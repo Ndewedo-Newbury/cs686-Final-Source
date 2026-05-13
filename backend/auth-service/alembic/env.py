@@ -4,7 +4,7 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-sys.path.insert(0, str(Path(__file__).parents[3]))  # /app        — for shared/
+sys.path.insert(0, str(Path(__file__).parents[2]))  # /app/backend — for shared/
 sys.path.insert(0, str(Path(__file__).parents[1]))  # /app/backend/auth-service — for app/
 
 from shared.database.base import Base

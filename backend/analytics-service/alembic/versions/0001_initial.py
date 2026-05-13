@@ -23,10 +23,9 @@ def upgrade():
         sa.Column("current_streak", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("last_workout_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()")),
+        sa.UniqueConstraint("user_id"),
     )
-    op.create_index("ix_user_stats_user_id", "user_stats", ["user_id"], unique=True)
 
 
 def downgrade():
-    op.drop_index("ix_user_stats_user_id", table_name="user_stats")
     op.drop_table("user_stats")

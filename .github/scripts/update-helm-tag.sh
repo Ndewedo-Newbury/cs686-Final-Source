@@ -22,5 +22,5 @@ git config user.name  "github-actions[bot]"
 git config user.email "github-actions[bot]@users.noreply.github.com"
 git add "${VALUES_FILE}"
 git diff --staged --quiet || git commit -m "${COMMIT_MSG}"
-git pull --rebase -X ours origin main
+git pull --rebase -X ours origin "$(git rev-parse --abbrev-ref HEAD)"
 git push

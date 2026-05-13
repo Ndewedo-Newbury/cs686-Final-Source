@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: 010525338060.dkr.ecr.us-west-2.amazonaws.com/fitness-tracker/auth-service
-  tag: sha-7853d61
+  tag: sha-a565832
 serviceAccount:
   roleArn: arn:aws:iam::010525338060:role/LabRole
 externalSecrets:

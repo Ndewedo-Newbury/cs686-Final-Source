@@ -10,7 +10,7 @@ class Workout(Base):
     __tablename__ = "workouts"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(Uuid(as_uuid=True), nullable=False)
+    user_id = Column(Uuid(as_uuid=True), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     logged_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     exercises = relationship("Exercise", back_populates="workout", cascade="all, delete")
@@ -20,7 +20,7 @@ class Exercise(Base):
     __tablename__ = "exercises"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workout_id = Column(Uuid(as_uuid=True), ForeignKey("workouts.id", ondelete="CASCADE"), nullable=False)
+    workout_id = Column(Uuid(as_uuid=True), ForeignKey("workouts.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     sets = Column(Integer, nullable=False)
     reps = Column(Integer, nullable=False)

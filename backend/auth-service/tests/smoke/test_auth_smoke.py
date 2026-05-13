@@ -15,7 +15,7 @@ def test_health(api_url):
 def test_login_rejects_bad_credentials(api_url):
     r = requests.post(
         f"{api_url}/api/v1/auth/login",
-        json={"email": "nobody@smoke.test", "password": "InvalidPass1!"},
+        json={"email": "nobody@example.com", "password": "InvalidPass1!"},
         timeout=10,
     )
     assert r.status_code == 401

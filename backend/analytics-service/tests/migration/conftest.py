@@ -7,8 +7,8 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
 
-sys.path.insert(0, str(Path(__file__).parents[5]))
-sys.path.insert(0, str(Path(__file__).parents[3]))
+sys.path.insert(0, str(Path(__file__).parents[3]))  # backend/              — for shared/
+sys.path.insert(0, str(Path(__file__).parents[2]))  # backend/analytics-service — for app/
 
 
 @pytest.fixture(scope="session")

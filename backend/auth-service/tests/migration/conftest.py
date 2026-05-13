@@ -7,10 +7,8 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
 
-# Make `shared` importable (repo-root/shared)
-sys.path.insert(0, str(Path(__file__).parents[5]))
-# Make `app` importable (backend/auth-service)
-sys.path.insert(0, str(Path(__file__).parents[3]))
+sys.path.insert(0, str(Path(__file__).parents[3]))  # backend/       — for shared/
+sys.path.insert(0, str(Path(__file__).parents[2]))  # backend/auth-service — for app/
 
 
 @pytest.fixture(scope="session")

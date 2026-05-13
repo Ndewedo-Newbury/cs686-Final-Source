@@ -1,8 +1,6 @@
 import axios from 'axios'
 
-const AUTH_URL = 'http://localhost:8001'
-const WORKOUTS_URL = 'http://localhost:8002'
-const ANALYTICS_URL = 'http://localhost:8003'
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'https://dev-api.cs686.live'
 
 function makeClient(baseURL: string) {
   const client = axios.create({ baseURL })
@@ -14,6 +12,6 @@ function makeClient(baseURL: string) {
   return client
 }
 
-export const authClient = makeClient(AUTH_URL)
-export const workoutsClient = makeClient(WORKOUTS_URL)
-export const analyticsClient = makeClient(ANALYTICS_URL)
+export const authClient = makeClient(API_BASE)
+export const workoutsClient = makeClient(API_BASE)
+export const analyticsClient = makeClient(API_BASE)

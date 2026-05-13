@@ -4,3 +4,5 @@ image:
   tag: sha-0547510
 ingress:
   host: dev.cs686.live
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-west-2:010525338060:certificate/969a21cf-873e-451b-9be2-faec4907762c

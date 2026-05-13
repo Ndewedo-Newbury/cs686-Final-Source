@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'https://dev-api.cs686.live'
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 function makeClient(baseURL: string) {
   const client = axios.create({ baseURL })

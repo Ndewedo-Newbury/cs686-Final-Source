@@ -56,7 +56,8 @@ resource "aws_api_gateway_method" "service_proxy" {
   authorization = "NONE"
 
   request_parameters = {
-    "method.request.path.proxy" = true
+    "method.request.path.proxy"          = true
+    "method.request.header.Authorization" = false
   }
 }
 
@@ -70,7 +71,8 @@ resource "aws_api_gateway_integration" "service_proxy" {
   uri                     = "http://${local.effective_alb_dns}/api/v1/${each.value.path}/{proxy}"
 
   request_parameters = {
-    "integration.request.path.proxy" = "method.request.path.proxy"
+    "integration.request.path.proxy"          = "method.request.path.proxy"
+    "integration.request.header.Authorization" = "method.request.header.Authorization"
   }
 }
 

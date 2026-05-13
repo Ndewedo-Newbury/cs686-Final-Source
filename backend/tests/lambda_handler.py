@@ -26,13 +26,15 @@ def handler(event, context):
     """
     service = event["service"]
     suite   = event["suite"]
-    env     = os.environ["ENVIRONMENT"]
+    env     = event.get("environment", os.environ["ENVIRONMENT"])
     project = os.environ["PROJECT"]
     region  = os.environ.get("AWS_REGION_NAME", "us-east-1")
 
     sm = boto3.client("secretsmanager", region_name=region)
     test_env = os.environ.copy()
     test_env["PYTHONPATH"] = "/app/backend"
+    if "api_url" in event:
+        test_env["API_URL"] = event["api_url"]
 
     if suite == "integration":
         db_secret_paths = {

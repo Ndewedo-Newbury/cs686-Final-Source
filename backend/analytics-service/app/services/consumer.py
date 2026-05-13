@@ -9,13 +9,11 @@ from shared.events.schemas import WorkoutLoggedEvent
 from shared.database.base import SessionLocal
 from app.models.stats import UserStats
 
-sqs = boto3.client(
-    "sqs",
-    endpoint_url=os.getenv("SQS_ENDPOINT_URL", "http://localstack:4566"),
-    region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"),
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "test"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "test"),
-)
+_sqs_kwargs = {"region_name": os.getenv("AWS_DEFAULT_REGION", "us-west-2")}
+if os.getenv("SQS_ENDPOINT_URL"):
+    _sqs_kwargs["endpoint_url"] = os.getenv("SQS_ENDPOINT_URL")
+
+sqs = boto3.client("sqs", **_sqs_kwargs)
 
 QUEUE_URL = os.getenv("SQS_QUEUE_URL")
 

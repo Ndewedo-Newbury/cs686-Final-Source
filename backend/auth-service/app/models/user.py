@@ -12,4 +12,3 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    last_login = Column(DateTime, nullable=True)
